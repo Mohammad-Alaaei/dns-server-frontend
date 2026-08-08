@@ -60,7 +60,8 @@
     "dark": "Dark",
     "system": "System",
     "profile": "Profile",
-    "role": "Role"
+    "role": "Role",
+    "comingSoon": "Coming soon"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -73,7 +74,27 @@
     "ip": "IP Address",
     "source": "Source",
     "ttl": "TTL",
-    "enabled": "Enabled"
+    "enabled": "Enabled",
+    "hits": "Hits",
+    "lastHit": "Last hit",
+    "created": "Created",
+    "updated": "Updated",
+    "total": "total",
+    "enable": "Enable",
+    "disable": "Disable",
+    "promote": "Promote to LOCAL",
+    "answers": "DNS answers",
+    "values": "Values",
+    "type": "Type",
+    "value": "Value",
+    "status": "Status",
+    "selected": "Selected",
+    "server": "Server",
+    "resolvedServers": "Resolved servers",
+    "cnameChain": "CNAME chain",
+    "cnameChainHint": "Follows CNAME targets step by step. Click a domain to open its record.",
+    "cnameRoot": "This record",
+    "missing": "missing"
   },
   "servers": {
     "title": "DNS Servers",

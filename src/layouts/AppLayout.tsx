@@ -15,7 +15,6 @@ import {
   LogOut,
   Moon,
   Sun,
-  Monitor,
   ChevronDown,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
@@ -37,7 +36,7 @@ const navItems = [
 export default function AppLayout() {
   const { t } = useTranslation()
   const { user, logout, hasRole } = useAuth()
-  const { theme, setTheme, resolvedTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -50,7 +49,7 @@ export default function AppLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="min-h-screen bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -59,14 +58,15 @@ export default function AppLayout() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — fixed on all sizes so it stays during scroll */}
       <aside
         className={cn(
-          'fixed inset-y-0 start-0 z-50 w-64 transform border-e bg-card transition-transform duration-200 ease-in-out lg:static lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full rtl:lg:translate-x-0'
+          'fixed inset-y-0 start-0 z-50 flex w-64 flex-col border-e bg-card transition-transform duration-200 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full',
+          'lg:translate-x-0'
         )}
       >
-        <div className="flex h-14 items-center justify-between border-b px-4 lg:justify-center">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b px-4 lg:justify-center">
           <span className="text-lg font-semibold">{t('app.title')}</span>
           <Button
             variant="ghost"
@@ -77,7 +77,7 @@ export default function AppLayout() {
             <X className="h-5 w-5" />
           </Button>
         </div>
-        <nav className="flex flex-col gap-1 p-3">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
           {visibleNav.map((item) => (
             <NavLink
               key={item.to}
@@ -86,7 +86,7 @@ export default function AppLayout() {
               onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors cursor-pointer',
                   isActive
                     ? 'bg-primary text-primary-foreground'
                     : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
@@ -100,10 +100,9 @@ export default function AppLayout() {
         </nav>
       </aside>
 
-      {/* Main area */}
-      <div className="flex flex-1 flex-col min-w-0">
-        {/* Top bar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card px-4">
+      {/* Main area — offset by sidebar width on desktop */}
+      <div className="flex min-h-screen flex-col lg:ms-64">
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-4 border-b bg-card px-4">
           <Button
             variant="ghost"
             size="icon"
@@ -115,23 +114,20 @@ export default function AppLayout() {
 
           <div className="flex-1" />
 
-          {/* Theme toggle */}
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-              title={t('common.theme')}
-            >
-              {resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </Button>
-          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="cursor-pointer"
+            onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+            title={t('common.theme')}
+          >
+            {resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </Button>
 
-          {/* User menu */}
           <div className="relative">
             <Button
               variant="ghost"
-              className="gap-2"
+              className="gap-2 cursor-pointer"
               onClick={() => setUserMenuOpen((v) => !v)}
             >
               <span className="hidden sm:inline text-sm">{user?.username}</span>
@@ -145,7 +141,8 @@ export default function AppLayout() {
                 <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
                 <div className="absolute end-0 z-50 mt-1 w-48 rounded-md border bg-popover p-1 shadow-md">
                   <button
-                    className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
+                    type="button"
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
                     onClick={() => {
                       setUserMenuOpen(false)
                       navigate('/settings')
@@ -155,7 +152,8 @@ export default function AppLayout() {
                     {t('nav.settings')}
                   </button>
                   <button
-                    className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-destructive hover:bg-accent"
+                    type="button"
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm text-destructive hover:bg-accent"
                     onClick={() => {
                       setUserMenuOpen(false)
                       handleLogout()
@@ -170,7 +168,6 @@ export default function AppLayout() {
           </div>
         </header>
 
-        {/* Content */}
         <main className="flex-1 overflow-auto p-4 md:p-6">
           <Outlet />
         </main>

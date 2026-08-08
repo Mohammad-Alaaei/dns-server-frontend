@@ -5,6 +5,7 @@ import AppLayout from '@/layouts/AppLayout'
 import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import RecordsPage from '@/pages/RecordsPage'
+import RecordDetailPage from '@/pages/RecordDetailPage'
 import ServersPage from '@/pages/ServersPage'
 import LogsPage from '@/pages/LogsPage'
 import MemoryPage from '@/pages/MemoryPage'
@@ -42,6 +43,7 @@ function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="records" element={<RecordsPage />} />
+        <Route path="records/:id" element={<RecordDetailPage />} />
         <Route path="servers" element={<ServersPage />} />
         <Route path="logs" element={<LogsPage />} />
         <Route path="memory" element={<MemoryPage />} />
