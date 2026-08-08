@@ -1,0 +1,115 @@
+{
+  "app": {
+    "title": "DNS Admin",
+    "name": "Custom DNS Server"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "records": "DNS Records",
+    "servers": "DNS Servers",
+    "logs": "Logs",
+    "memory": "Memory / Cache",
+    "system": "System",
+    "users": "Users",
+    "settings": "Settings"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "username": "Username",
+    "password": "Password",
+    "loginButton": "Sign in",
+    "loginTitle": "Sign in to DNS Admin",
+    "loginSubtitle": "Enter your credentials to access the admin panel",
+    "changePassword": "Change Password",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password",
+    "invalidCredentials": "Invalid username or password",
+    "sessionExpired": "Session expired. Please log in again."
+  },
+  "common": {
+    "search": "Search",
+    "sort": "Sort",
+    "filter": "Filter",
+    "actions": "Actions",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "create": "Create",
+    "save": "Save",
+    "cancel": "Cancel",
+    "back": "Back",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "error": "Something went wrong",
+    "success": "Success",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "page": "Page",
+    "of": "of",
+    "rowsPerPage": "Rows per page",
+    "previous": "Previous",
+    "next": "Next",
+    "theme": "Theme",
+    "language": "Language",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System",
+    "profile": "Profile",
+    "role": "Role"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome back",
+    "stats": "Statistics"
+  },
+  "records": {
+    "title": "DNS Records",
+    "domain": "Domain",
+    "ip": "IP Address",
+    "source": "Source",
+    "ttl": "TTL",
+    "enabled": "Enabled"
+  },
+  "servers": {
+    "title": "DNS Servers",
+    "name": "Name",
+    "address": "Address",
+    "port": "Port"
+  },
+  "logs": {
+    "title": "Logs",
+    "timestamp": "Timestamp",
+    "level": "Level",
+    "message": "Message"
+  },
+  "memory": {
+    "title": "Memory / Cache",
+    "pending": "Pending entries",
+    "flush": "Flush Cache"
+  },
+  "system": {
+    "title": "System",
+    "flush": "Flush Cache",
+    "reload": "Reload Memory",
+    "reloadAll": "Reload All",
+    "reloadRecords": "Reload Records",
+    "reloadServers": "Reload DNS Servers"
+  },
+  "users": {
+    "title": "Users",
+    "username": "Username",
+    "role": "Role",
+    "created": "Created"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "saveSuccess": "Settings saved"
+  }
+}
