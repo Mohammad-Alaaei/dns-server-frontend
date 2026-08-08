@@ -37,7 +37,18 @@ export function getStoredUser(): User | null {
   const raw = localStorage.getItem(USER_KEY)
   if (!raw) return null
   try {
-    return JSON.parse(raw) as User
+    const parsed = JSON.parse(raw) as Partial<User>
+    if (
+      typeof parsed?.id === 'number' &&
+      parsed.id > 0 &&
+      typeof parsed?.username === 'string' &&
+      parsed.username &&
+      typeof parsed?.role === 'string' &&
+      parsed.role
+    ) {
+      return { id: parsed.id, username: parsed.username, role: parsed.role }
+    }
+    return null
   } catch {
     return null
   }

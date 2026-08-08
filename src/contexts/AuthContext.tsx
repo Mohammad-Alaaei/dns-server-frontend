@@ -31,30 +31,61 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+function normalizeUser(raw: unknown): User | null {
+  if (!raw || typeof raw !== 'object') return null
+  const obj = raw as Record<string, unknown>
+  // Support both { user: {...} } and flat { id, username, role }
+  const src =
+    obj.user && typeof obj.user === 'object'
+      ? (obj.user as Record<string, unknown>)
+      : obj
+  const id = Number(src.id)
+  const username = typeof src.username === 'string' ? src.username : ''
+  const role = typeof src.role === 'string' ? src.role : ''
+  if (!Number.isFinite(id) || id < 1 || !username || !role) return null
+  return { id, username, role }
+}
 
-  // Restore session on mount
+export function AuthProvider({ children }: { children: ReactNode }) {
+  // Hydrate from localStorage immediately so refresh doesn't blank the shell
+  const [user, setUser] = useState<User | null>(() => getStoredUser())
+  const [isLoading, setIsLoading] = useState(() => !!getStoredAccessToken())
+
+  // Validate / refresh session on mount
   useEffect(() => {
     async function restore() {
       const token = getStoredAccessToken()
-      const storedUser = getStoredUser()
       if (!token) {
+        setUser(null)
         setIsLoading(false)
         return
       }
+
+      // Keep stored user visible while we revalidate
+      const cached = getStoredUser()
+      if (cached) setUser(cached)
+
       try {
-        const { data } = await api.get<{ id: number; username: string; role: string }>('/auth/me')
-        const u: User = { id: data.id, username: data.username, role: data.role }
+        // Backend: GET /api/auth/me → { user: { id, username, role } }
+        const { data } = await api.get<unknown>('/auth/me')
+        const u = normalizeUser(data)
+        if (!u) {
+          throw new Error('Invalid /auth/me payload')
+        }
         setUser(u)
         setStoredUser(u)
       } catch {
-        // Token invalid — try refresh path is already in interceptor, else clear
-        if (!getStoredRefreshToken()) {
+        // Interceptor may have already tried refresh. If we still fail, drop session
+        // only when there is no usable refresh token left (interceptor clears on hard fail).
+        const stillHasToken = !!getStoredAccessToken()
+        if (!stillHasToken && !getStoredRefreshToken()) {
           clearStoredAuth()
+          setUser(null)
+        } else if (!stillHasToken) {
+          clearStoredAuth()
+          setUser(null)
         }
-        setUser(null)
+        // If token still exists but /me failed for another reason, keep cached user
       } finally {
         setIsLoading(false)
       }
@@ -63,20 +94,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const login = useCallback(async (username: string, password: string) => {
-    // 1. Fetch public key
     const { data: keyData } = await api.get<{ publicKey: string; algorithm: string; hash: string }>(
       '/auth/public-key'
     )
-    // 2. Encrypt password
     const encrypted = await encryptPassword(password, keyData.publicKey)
-    // 3. Login
     const { data } = await api.post<AuthResponse>('/auth/login', {
       username,
       password: encrypted,
     })
     setStoredTokens(data.accessToken, data.refreshToken)
-    setStoredUser(data.user)
-    setUser(data.user)
+    const u = normalizeUser(data.user) ?? data.user
+    setStoredUser(u)
+    setUser(u)
   }, [])
 
   const logout = useCallback(async () => {
@@ -102,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasRole = useCallback(
     (...roles: string[]) => {
-      if (!user) return false
+      if (!user?.role) return false
       return roles.includes(user.role)
     },
     [user]
@@ -111,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       user,
-      isAuthenticated: !!user,
+      isAuthenticated: !!user?.id && !!user?.role,
       isLoading,
       login,
       logout,
