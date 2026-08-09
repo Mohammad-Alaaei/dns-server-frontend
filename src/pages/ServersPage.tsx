@@ -23,6 +23,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { Loading } from '@/components/Loading'
 
 function typeBadgeVariant(type: string) {
   return type === 'DEFAULT' ? ('success' as const) : ('secondary' as const)
@@ -235,8 +236,8 @@ export default function ServersPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
-                      {t('common.loading')}
+                    <td colSpan={7}>
+                      <Loading fullScreen={false} />
                     </td>
                   </tr>
                 ) : items.length === 0 ? (
@@ -296,11 +297,10 @@ export default function ServersPage() {
             </table>
           </div>
 
+          {/* Mobile Card */}
           <div className="md:hidden divide-y">
             {loading ? (
-              <div className="px-4 py-12 text-center text-muted-foreground">
-                {t('common.loading')}
-              </div>
+              <Loading fullScreen={false} />
             ) : items.length === 0 ? (
               <div className="px-4 py-12 text-center text-muted-foreground">
                 {t('common.noResults')}

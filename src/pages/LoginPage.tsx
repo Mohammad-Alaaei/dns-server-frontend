@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Loading } from '@/components/Loading'
 
 export default function LoginPage() {
   const { t } = useTranslation()
@@ -17,11 +18,7 @@ export default function LoginPage() {
   const [submitting, setSubmitting] = useState(false)
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">{t('common.loading')}</p>
-      </div>
-    )
+    return <Loading />
   }
 
   if (isAuthenticated) {

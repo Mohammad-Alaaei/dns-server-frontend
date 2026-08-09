@@ -14,15 +14,12 @@ import SystemPage from '@/pages/SystemPage'
 import UsersPage from '@/pages/UsersPage'
 import SettingsPage from '@/pages/SettingsPage'
 import { type ReactNode } from 'react'
+import { Loading } from './components/Loading'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
   if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    )
+    return <Loading/>
   }
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />

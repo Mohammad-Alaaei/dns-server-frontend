@@ -27,6 +27,7 @@ import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { RelativeTime } from '@/components/RelativeTime'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { cn } from '@/lib/utils'
+import { Loading } from '@/components/Loading'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -175,11 +176,7 @@ export default function RecordDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24 text-muted-foreground">
-        {t('common.loading')}
-      </div>
-    )
+    return <Loading />
   }
 
   if (error || !record) {

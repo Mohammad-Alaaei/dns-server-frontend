@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
+import { Loading } from '@/components/Loading'
 
 function typeBadgeVariant(type: string) {
   return type === 'DEFAULT' ? ('success' as const) : ('secondary' as const)
@@ -109,11 +110,7 @@ export default function ServerDetailPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-24 text-muted-foreground">
-        {t('common.loading')}
-      </div>
-    )
+    return <Loading />
   }
 
   if (error || !server) {
@@ -310,8 +307,8 @@ export default function ServerDetailPage() {
               <tbody>
                 {rulesLoading ? (
                   <tr>
-                    <td colSpan={3} className="px-3 py-10 text-center text-muted-foreground">
-                      {t('common.loading')}
+                    <td colSpan={3}>
+                      <Loading fullScreen={false} />
                     </td>
                   </tr>
                 ) : rules.length === 0 ? (
