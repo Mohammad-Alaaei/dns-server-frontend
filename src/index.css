@@ -83,3 +83,23 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
+
+
+/* Recharts: soft focus instead of harsh black outline */
+.dashboard-charts .recharts-wrapper *:focus,
+.dashboard-charts .recharts-wrapper *:focus-visible,
+.dashboard-charts .recharts-sector:focus,
+.dashboard-charts .recharts-bar-rectangle:focus,
+.dashboard-charts .recharts-layer:focus {
+  outline: none !important;
+}
+
+.dashboard-charts .recharts-sector:focus,
+.dashboard-charts .recharts-bar-rectangle:focus {
+  filter: brightness(1.08);
+  opacity: 0.95;
+}
+
+.dashboard-charts .recharts-active-shape {
+  outline: none !important;
+}
