@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   Database,
@@ -85,8 +86,33 @@ export default function MemoryPage() {
   const { hasRole } = useAuth()
   const canManage = hasRole('superadmin')
 
-  const [tab, setTab] = useState<TabId>('pending')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const initialTab: TabId =
+    tabParam === 'exact' ||
+    tabParam === 'regex' ||
+    tabParam === 'defaultServers' ||
+    tabParam === 'customServers' ||
+    tabParam === 'pending'
+      ? tabParam
+      : 'pending'
+  const [tab, setTab] = useState<TabId>(initialTab)
   const [page, setPage] = useState(1)
+
+  // Sync when URL changes (e.g. from dashboard deep link)
+  useEffect(() => {
+    const p = searchParams.get('tab')
+    if (
+      p === 'exact' ||
+      p === 'regex' ||
+      p === 'defaultServers' ||
+      p === 'customServers' ||
+      p === 'pending'
+    ) {
+      setTab(p)
+      setPage(1)
+    }
+  }, [searchParams])
   const [limit] = useState(20)
 
   const [storeLoading, setStoreLoading] = useState(true)
@@ -154,6 +180,7 @@ export default function MemoryPage() {
   function switchTab(next: TabId) {
     setTab(next)
     setPage(1)
+    setSearchParams(next === 'pending' ? {} : { tab: next }, { replace: true })
   }
 
   function goPrev() {
