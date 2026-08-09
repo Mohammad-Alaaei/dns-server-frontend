@@ -165,11 +165,47 @@
       "dns-servers": "DNS servers"
     }
   },
+  "system": {
+    "title": "System",
+    "subtitle": "Flush pending cache and reload in-memory data from the database. Superadmin only.",
+    "flush": "Flush cache",
+    "flushHint": "Write pending cache entries to the database (same path as the periodic flusher).",
+    "flushSuccess": "Cache flushed. {{count}} pending entries were processed.",
+    "reload": "Reload memory",
+    "reloadHint": "Rebuild selected in-memory collections from the database.",
+    "reloadAll": "Reload all",
+    "reloadRecords": "Reload records",
+    "reloadServers": "Reload DNS servers",
+    "reloadSuccess": "Memory reloaded ({{scope}}).",
+    "lastReload": "Last reload counts",
+    "scopeLabel": "Scope",
+    "exactRecords": "Exact records",
+    "regexRecords": "Regex records",
+    "defaultServers": "Default DNS servers",
+    "customServers": "Custom DNS servers",
+    "scope": {
+      "all": "all",
+      "records": "records",
+      "dns-servers": "DNS servers"
+    }
+  },
   "users": {
     "title": "Users",
     "username": "Username",
     "role": "Role",
-    "created": "Created"
+    "created": "Created",
+    "updated": "Updated",
+    "create": "Create user",
+    "createTitle": "Create user",
+    "you": "you",
+    "formRequired": "Username and password are required",
+    "invalidRole": "You cannot assign this role",
+    "roleHint": "You can only create users with a lower role than your own. Default is Viewer.",
+    "roles": {
+      "superadmin": "Superadmin",
+      "admin": "Admin",
+      "viewer": "Viewer"
+    }
   },
   "settings": {
     "title": "Settings",
