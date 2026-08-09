@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { RelativeTime } from '@/components/RelativeTime'
 import { Loading } from '@/components/Loading'
+import { NoResult } from '@/components/NoResult'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -289,8 +290,8 @@ export default function RecordsPage() {
                   </tr>
                 ) : items.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">
-                      {t('common.noResults')}
+                    <td colSpan={7}>
+                      <NoResult fullScreen={false} />
                     </td>
                   </tr>
                 ) : (
@@ -351,9 +352,7 @@ export default function RecordsPage() {
             {loading ? (
               <Loading fullScreen={false} />
             ) : items.length === 0 ? (
-              <div className="px-4 py-12 text-center text-muted-foreground">
-                {t('common.noResults')}
-              </div>
+              <NoResult fullScreen={false} />
             ) : (
               items.map((row) => (
                 <div

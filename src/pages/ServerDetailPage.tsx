@@ -26,6 +26,7 @@ import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { Loading } from '@/components/Loading'
+import { NoResult } from '@/components/NoResult'
 
 function typeBadgeVariant(type: string) {
   return type === 'DEFAULT' ? ('success' as const) : ('secondary' as const)
@@ -313,8 +314,8 @@ export default function ServerDetailPage() {
                   </tr>
                 ) : rules.length === 0 ? (
                   <tr>
-                    <td colSpan={3} className="px-3 py-10 text-center text-muted-foreground">
-                      {t('common.noResults')}
+                    <td colSpan={3}>
+                      <NoResult fullScreen={false} />
                     </td>
                   </tr>
                 ) : (
