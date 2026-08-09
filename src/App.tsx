@@ -11,7 +11,6 @@ import ServerDetailPage from '@/pages/ServerDetailPage'
 import LogsPage from '@/pages/LogsPage'
 import LogDetailPage from '@/pages/LogDetailPage'
 import MemoryPage from '@/pages/MemoryPage'
-import SystemPage from '@/pages/SystemPage'
 import UsersPage from '@/pages/UsersPage'
 import SettingsPage from '@/pages/SettingsPage'
 import { type ReactNode } from 'react'
@@ -48,7 +47,6 @@ function AppRoutes() {
         <Route path="logs" element={<LogsPage />} />
         <Route path="logs/:filename" element={<LogDetailPage />} />
         <Route path="memory" element={<MemoryPage />} />
-        <Route path="system" element={<SystemPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="settings" element={<SettingsPage />} />
       </Route>

@@ -9,7 +9,6 @@ import {
   MemoryStick,
   Settings,
   Users,
-  Shield,
   Menu,
   X,
   LogOut,
@@ -28,7 +27,6 @@ const navItems = [
   { to: '/servers', icon: Server, labelKey: 'nav.servers', roles: ['superadmin', 'admin', 'viewer'] },
   { to: '/logs', icon: ScrollText, labelKey: 'nav.logs', roles: ['superadmin'] },
   { to: '/memory', icon: MemoryStick, labelKey: 'nav.memory', roles: ['superadmin', 'admin'] },
-  { to: '/system', icon: Shield, labelKey: 'nav.system', roles: ['superadmin'] },
   { to: '/users', icon: Users, labelKey: 'nav.users', roles: ['superadmin'] },
   { to: '/settings', icon: Settings, labelKey: 'nav.settings', roles: ['superadmin', 'admin', 'viewer'] },
 ]

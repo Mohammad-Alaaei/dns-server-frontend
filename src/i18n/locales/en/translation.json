@@ -138,16 +138,32 @@
   },
   "memory": {
     "title": "Memory / Cache",
-    "pending": "Pending entries",
-    "flush": "Flush Cache"
-  },
-  "system": {
-    "title": "System",
-    "flush": "Flush Cache",
-    "reload": "Reload Memory",
-    "reloadAll": "Reload All",
-    "reloadRecords": "Reload Records",
-    "reloadServers": "Reload DNS Servers"
+    "subtitle": "Live in-memory store and pending cache. Flush and reload are superadmin actions.",
+    "pending": "Pending cache",
+    "exactRecords": "Exact records",
+    "regexRecords": "Regex records",
+    "defaultServers": "Default servers",
+    "customServers": "Custom groups",
+    "domain": "Domain",
+    "source": "Source",
+    "enabled": "Enabled",
+    "hits": "Hits",
+    "lastHit": "Last hit",
+    "updated": "Updated",
+    "refresh": "Refresh",
+    "actions": "Actions",
+    "actionsHint": "Flush pending cache to the database, or rebuild in-memory collections from DB.",
+    "flush": "Flush cache",
+    "flushSuccess": "Cache flushed. {{count}} pending entries were processed.",
+    "reloadAll": "Reload all",
+    "reloadRecords": "Reload records",
+    "reloadServers": "Reload DNS servers",
+    "reloadSuccess": "Memory reloaded ({{scope}}).",
+    "scope": {
+      "all": "all",
+      "records": "records",
+      "dns-servers": "DNS servers"
+    }
   },
   "users": {
     "title": "Users",
