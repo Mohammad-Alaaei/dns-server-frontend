@@ -122,6 +122,16 @@
   },
   "logs": {
     "title": "Logs",
+    "filename": "File",
+    "size": "Size",
+    "modified": "Modified",
+    "status": "Status",
+    "current": "Current session",
+    "content": "Log content",
+    "tail": "Last lines",
+    "refresh": "Refresh",
+    "autoScroll": "Auto-scroll",
+    "showing": "Lines",
     "timestamp": "Timestamp",
     "level": "Level",
     "message": "Message"
