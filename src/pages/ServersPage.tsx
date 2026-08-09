@@ -25,52 +25,10 @@ import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
+import { PaginationBar } from '@/components/PaginationBar'
 
 function typeBadgeVariant(type: string) {
   return type === 'DEFAULT' ? ('success' as const) : ('secondary' as const)
-}
-
-function PaginationBar({
-  pagination,
-  loading,
-  onPrev,
-  onNext,
-  totalLabel,
-}: {
-  pagination: PaginationMeta
-  loading: boolean
-  onPrev: () => void
-  onNext: () => void
-  totalLabel: string
-}) {
-  const { t } = useTranslation()
-  return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-muted-foreground">
-      <span>
-        {t('common.page')} {pagination.page} {t('common.of')} {pagination.totalPages}
-        {' · '}
-        {pagination.total} {totalLabel}
-      </span>
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!pagination.hasPrev || loading}
-          onClick={onPrev}
-        >
-          {t('common.previous')}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!pagination.hasNext || loading}
-          onClick={onNext}
-        >
-          {t('common.next')}
-        </Button>
-      </div>
-    </div>
-  )
 }
 
 function RowActions({
@@ -205,17 +163,14 @@ export default function ServersPage() {
         </Button>
       </div>
 
-      {pagination && pagination.totalPages > 0 && (
         <div className="pt-1">
           <PaginationBar
             pagination={pagination}
             loading={loading}
             onPrev={goPrev}
             onNext={goNext}
-            totalLabel={t('servers.total')}
           />
         </div>
-      )}
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
@@ -343,15 +298,12 @@ export default function ServersPage() {
         </CardContent>
       </Card>
 
-      {pagination && pagination.totalPages > 0 && (
         <PaginationBar
           pagination={pagination}
           loading={loading}
           onPrev={goPrev}
           onNext={goNext}
-          totalLabel={t('servers.total')}
         />
-      )}
     </div>
   )
 }
