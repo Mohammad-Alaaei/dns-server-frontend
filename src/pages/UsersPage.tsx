@@ -47,7 +47,6 @@ function roleBadgeVariant(role: string) {
 }
 
 function RowActions({
-  row,
   isSelf,
 }: {
   row: UserListItem

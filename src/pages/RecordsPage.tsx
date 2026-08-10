@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import {
   MoreHorizontal,
   MoreVertical,
-  Search,
   Eye,
   Power,
   PowerOff,
@@ -25,7 +24,6 @@ import {
 } from '@/api/records'
 import type { PaginationMeta } from '@/api/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
