@@ -1,0 +1,30 @@
+# Frontend-only stack: Admin UI (nginx)
+# Usage (from dns-admin-ui/ directory):
+#   docker compose up -d --build
+#
+# Important:
+#   - Set VITE_API_BASE_URL to the real backend API URL at build time
+#     (e.g. http://192.168.1.10:3000) if the backend is on another host.
+#
+# Ports:
+#   80    → Admin UI
+
+name: dns-frontend
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        # Change this when backend lives on another machine
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    networks:
+      - frontend_net
+
+networks:
+  frontend_net:
+    driver: bridge
