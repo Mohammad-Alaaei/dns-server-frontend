@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useLocation } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import {
   ArrowLeft,
   Power,
   PowerOff,
   ArrowUpCircle,
+  ArrowDownCircle,
   Pencil,
   Trash2,
   MoreHorizontal,
@@ -17,6 +18,8 @@ import {
   getRecord,
   setRecordsEnabled,
   promoteRecords,
+  demoteRecords,
+  deleteRecord,
   type RecordDetailResponse,
   type RecordValueItem,
 } from '@/api/records'
@@ -102,6 +105,14 @@ export default function RecordDetailPage() {
   const { t } = useTranslation()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
+  const flashSuccess =
+    location.state &&
+    typeof location.state === 'object' &&
+    location.state !== null &&
+    'flashSuccess' in location.state
+      ? String((location.state as { flashSuccess?: string }).flashSuccess ?? '')
+      : ''
   const { hasRole } = useAuth()
   const canWrite = hasRole('superadmin', 'admin')
 
@@ -166,6 +177,34 @@ export default function RecordDetailPage() {
   const canPromote =
     canWrite && record && (record.source === 'CACHE' || record.source === 'FILTERED')
 
+  const canDemote = canWrite && record && record.source === 'LOCAL'
+
+  async function handleDemote() {
+    if (!record || !canWrite) return
+    setActionLoading(true)
+    try {
+      await demoteRecords([record.id])
+      await load()
+    } catch {
+      setError(t('common.error'))
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!record || !canWrite) return
+    if (!window.confirm(t('records.deleteRecordConfirm', { domain: record.domain }))) return
+    setActionLoading(true)
+    try {
+      await deleteRecord(record.id)
+      navigate('/records', { replace: true })
+    } catch {
+      setError(t('common.error'))
+      setActionLoading(false)
+    }
+  }
+
   function handleBack() {
     // Prefer browser history so CNAME → detail → Back returns to previous detail
     if (window.history.length > 1) {
@@ -204,6 +243,15 @@ export default function RecordDetailPage() {
           { label: record.domain },
         ]}
       />
+
+      {flashSuccess && (
+        <div
+          role="status"
+          className="rounded-lg border border-green-600/40 bg-green-600/10 px-3 py-2 text-sm text-green-800 dark:text-green-200"
+        >
+          {flashSuccess}
+        </div>
+      )}
 
       {/* Top actions row */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -274,14 +322,24 @@ export default function RecordDetailPage() {
               </Button>
             }
           >
-            <DropdownMenuItem disabled>
-              <Pencil className="h-4 w-4" />
-              {t('common.edit')}
-            </DropdownMenuItem>
-            <DropdownMenuItem disabled destructive>
-              <Trash2 className="h-4 w-4" />
-              {t('common.delete')}
-            </DropdownMenuItem>
+            {canWrite && (
+              <DropdownMenuItem onClick={() => navigate(`/records/${record.id}/edit`)}>
+                <Pencil className="h-4 w-4" />
+                {t('common.edit')}
+              </DropdownMenuItem>
+            )}
+            {canDemote && (
+              <DropdownMenuItem onClick={() => void handleDemote()}>
+                <ArrowDownCircle className="h-4 w-4" />
+                {t('records.demote')}
+              </DropdownMenuItem>
+            )}
+            {canWrite && (
+              <DropdownMenuItem onClick={() => void handleDelete()} destructive>
+                <Trash2 className="h-4 w-4" />
+                {t('common.delete')}
+              </DropdownMenuItem>
+            )}
           </DropdownMenu>
         </div>
       </div>

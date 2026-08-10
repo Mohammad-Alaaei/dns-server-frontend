@@ -9,6 +9,7 @@ import {
   Power,
   PowerOff,
   ArrowUpCircle,
+  ArrowDownCircle,
   Pencil,
   Trash2,
   Plus,
@@ -18,6 +19,8 @@ import {
   listRecords,
   setRecordsEnabled,
   promoteRecords,
+  demoteRecords,
+  deleteRecord,
   type RecordListItem,
 } from '@/api/records'
 import type { PaginationMeta } from '@/api/client'
@@ -51,18 +54,26 @@ function RowActions({
   row,
   canWrite,
   canPromote,
+  canDemote,
   actionLoading,
   onView,
   onToggle,
   onPromote,
+  onDemote,
+  onEdit,
+  onDelete,
 }: {
   row: RecordListItem
   canWrite: boolean
   canPromote: boolean
+  canDemote: boolean
   actionLoading: boolean
   onView: () => void
   onToggle: () => void
   onPromote: () => void
+  onDemote: () => void
+  onEdit: () => void
+  onDelete: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -75,7 +86,6 @@ function RowActions({
           aria-label={t('common.actions')}
           className="cursor-pointer"
         >
-          {/* Horizontal on md+, vertical on small screens */}
           <MoreHorizontal className="hidden h-4 w-4 md:block" />
           <MoreVertical className="h-4 w-4 md:hidden" />
         </Button>
@@ -106,14 +116,24 @@ function RowActions({
           {t('records.promote')}
         </DropdownMenuItem>
       )}
-      <DropdownMenuItem disabled>
-        <Pencil className="h-4 w-4" />
-        {t('common.edit')}
-      </DropdownMenuItem>
-      <DropdownMenuItem disabled destructive>
-        <Trash2 className="h-4 w-4" />
-        {t('common.delete')}
-      </DropdownMenuItem>
+      {canDemote && (
+        <DropdownMenuItem onClick={onDemote}>
+          <ArrowDownCircle className="h-4 w-4" />
+          {t('records.demote')}
+        </DropdownMenuItem>
+      )}
+      {canWrite && (
+        <DropdownMenuItem onClick={onEdit}>
+          <Pencil className="h-4 w-4" />
+          {t('common.edit')}
+        </DropdownMenuItem>
+      )}
+      {canWrite && (
+        <DropdownMenuItem onClick={onDelete} destructive>
+          <Trash2 className="h-4 w-4" />
+          {t('common.delete')}
+        </DropdownMenuItem>
+      )}
     </DropdownMenu>
   )
 }
@@ -185,8 +205,38 @@ export default function RecordsPage() {
     }
   }
 
+  async function handleDemote(row: RecordListItem) {
+    if (!canWrite) return
+    setActionLoading(row.id)
+    try {
+      await demoteRecords([row.id])
+      await load()
+    } catch {
+      setError(t('common.error'))
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  async function handleDelete(row: RecordListItem) {
+    if (!canWrite) return
+    if (!window.confirm(t('records.deleteRecordConfirm', { domain: row.domain }))) return
+    setActionLoading(row.id)
+    try {
+      await deleteRecord(row.id)
+      await load()
+    } catch {
+      setError(t('common.error'))
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
   const canPromoteRow = (row: RecordListItem) =>
     canWrite && (row.source === 'CACHE' || row.source === 'FILTERED')
+
+  const canDemoteRow = (row: RecordListItem) =>
+    canWrite && row.source === 'LOCAL'
 
   function goPrev() {
     setPage((p) => Math.max(1, p - 1))
@@ -199,7 +249,10 @@ export default function RecordsPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t('records.title')}</h1>
-        <Button disabled title={t('common.comingSoon')} className="cursor-not-allowed">
+        <Button
+          disabled={!canWrite}
+          onClick={() => canWrite && navigate('/records/new')}
+        >
           <Plus className="h-4 w-4" />
           {t('common.create')}
         </Button>
@@ -314,10 +367,14 @@ export default function RecordsPage() {
                           row={row}
                           canWrite={canWrite}
                           canPromote={canPromoteRow(row)}
+                          canDemote={canDemoteRow(row)}
                           actionLoading={actionLoading === row.id}
                           onView={() => navigate(`/records/${row.id}`)}
                           onToggle={() => handleToggleEnabled(row)}
                           onPromote={() => handlePromote(row)}
+                          onDemote={() => handleDemote(row)}
+                          onEdit={() => navigate(`/records/${row.id}/edit`)}
+                          onDelete={() => handleDelete(row)}
                         />
                       </td>
                     </tr>
@@ -360,10 +417,14 @@ export default function RecordsPage() {
                       row={row}
                       canWrite={canWrite}
                       canPromote={canPromoteRow(row)}
+                      canDemote={canDemoteRow(row)}
                       actionLoading={actionLoading === row.id}
                       onView={() => navigate(`/records/${row.id}`)}
                       onToggle={() => handleToggleEnabled(row)}
                       onPromote={() => handlePromote(row)}
+                      onDemote={() => handleDemote(row)}
+                      onEdit={() => navigate(`/records/${row.id}/edit`)}
+                      onDelete={() => handleDelete(row)}
                     />
                   </div>
                 </div>

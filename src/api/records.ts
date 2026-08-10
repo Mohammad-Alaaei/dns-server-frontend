@@ -24,6 +24,7 @@ export interface RecordValueItem {
   is_stale: boolean
   last_success_at: number | null
   expires_at: number | null
+  dns_server_id?: number | null
   dnsServer?: {
     id: number
     ip: string
@@ -59,6 +60,23 @@ export interface RecordDetailResponse {
   >
 }
 
+export type RecordValueType = 'A' | 'AAAA' | 'CNAME'
+
+export interface CreateRecordValueInput {
+  type: RecordValueType | string
+  /** Backend expects a non-empty array (e.g. ["1.2.3.4"] or ["cdn.example.com"]). */
+  value: string[]
+  selected?: boolean
+  ttl?: number | null
+  dns_server_id?: number | null
+}
+
+/** Wrap a single UI string into the array shape the API requires. */
+export function toValueArray(value: string): string[] {
+  const v = value.trim()
+  return v ? [v] : []
+}
+
 export type ListRecordsParams = ListQueryParams
 
 export async function listRecords(params: ListRecordsParams = {}) {
@@ -82,6 +100,28 @@ export async function getRecord(id: number) {
   return data
 }
 
+export async function createRecord(body: {
+  domain: string
+  enabled?: boolean
+  values?: CreateRecordValueInput[]
+}) {
+  const { data } = await api.post<{ record: RecordDetail }>('/records', body)
+  return data.record
+}
+
+export async function updateRecord(
+  id: number,
+  body: { domain?: string; enabled?: boolean }
+) {
+  const { data } = await api.patch<{ record: RecordDetail }>(`/records/${id}`, body)
+  return data.record
+}
+
+export async function deleteRecord(id: number) {
+  const { data } = await api.delete<{ ok: boolean; id: number }>(`/records/${id}`)
+  return data
+}
+
 export async function setRecordsEnabled(ids: number[], enabled: boolean) {
   const { data } = await api.patch<{
     ok: boolean
@@ -99,4 +139,53 @@ export async function promoteRecords(ids: number[]) {
     promoted: number
   }>('/records/promote', { ids })
   return data
+}
+
+export async function demoteRecords(ids: number[]) {
+  const { data } = await api.post<{
+    ok: boolean
+    requested: number
+    demoted: number
+  }>('/records/demote', { ids })
+  return data
+}
+
+export async function createRecordValue(recordId: number, body: CreateRecordValueInput) {
+  const { data } = await api.post<{ value: RecordValueItem }>(
+    `/records/${recordId}/values`,
+    body
+  )
+  return data.value
+}
+
+export async function updateRecordValue(
+  recordId: number,
+  valueId: number,
+  body: Partial<CreateRecordValueInput>
+) {
+  const { data } = await api.patch<{ value: RecordValueItem }>(
+    `/records/${recordId}/values/${valueId}`,
+    body
+  )
+  return data.value
+}
+
+export async function deleteRecordValue(recordId: number, valueId: number) {
+  await api.delete(`/records/${recordId}/values/${valueId}`)
+}
+
+/** Normalize API value field to display string */
+export function valueToString(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value)) return value.map(valueToString).filter(Boolean).join(', ')
+  if (typeof value === 'object' && value !== null && 'data' in value) {
+    return valueToString((value as { data: unknown }).data)
+  }
+  try {
+    return JSON.stringify(value)
+  } catch {
+    return String(value)
+  }
 }

@@ -6,6 +6,7 @@ import LoginPage from '@/pages/LoginPage'
 import DashboardPage from '@/pages/DashboardPage'
 import RecordsPage from '@/pages/RecordsPage'
 import RecordDetailPage from '@/pages/RecordDetailPage'
+import RecordFormPage from '@/pages/RecordFormPage'
 import ServersPage from '@/pages/ServersPage'
 import ServerDetailPage from '@/pages/ServerDetailPage'
 import LogsPage from '@/pages/LogsPage'
@@ -41,6 +42,8 @@ function AppRoutes() {
       >
         <Route index element={<DashboardPage />} />
         <Route path="records" element={<RecordsPage />} />
+        <Route path="records/new" element={<RecordFormPage />} />
+        <Route path="records/:id/edit" element={<RecordFormPage />} />
         <Route path="records/:id" element={<RecordDetailPage />} />
         <Route path="servers" element={<ServersPage />} />
         <Route path="servers/:id" element={<ServerDetailPage />} />
