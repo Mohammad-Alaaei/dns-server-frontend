@@ -12,6 +12,7 @@ import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
 import { PaginationBar } from '@/components/PaginationBar'
+import { ListToolbar } from '@/components/ListToolbar'
 import { RelativeTime } from '@/components/RelativeTime'
 
 function formatBytes(n: number): string {
@@ -69,18 +70,13 @@ export default function LogsPage() {
         <h1 className="text-2xl font-bold tracking-tight">{t('logs.title')}</h1>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="ps-9" placeholder={t('common.search')} disabled />
-        </div>
-        <Button variant="outline" disabled>
-          {t('common.sort')}
-        </Button>
-        <Button variant="outline" disabled>
-          {t('common.filter')}
-        </Button>
-      </div>
+      <ListToolbar
+        searchFields={[{ value: 'name', label: t('logs.filename') }]}
+        showFilter={false}
+        onSubmit={() => {
+          /* logs list API has no search yet */
+        }}
+      />
 
       <div className="pt-1">
         <PaginationBar

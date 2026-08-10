@@ -30,6 +30,9 @@ import { RelativeTime } from '@/components/RelativeTime'
 import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
 import { PaginationBar } from '@/components/PaginationBar'
+import { ListToolbar } from '@/components/ListToolbar'
+import type { ListToolbarSubmit } from '@/lib/listQuery'
+import { SortableHeader, nextSortState, type SortState } from '@/components/SortableHeader'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -125,6 +128,13 @@ export default function RecordsPage() {
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
+  const [toolbarQuery, setToolbarQuery] = useState<ListToolbarSubmit>({
+    search: '',
+    searchField: 'domain',
+    filters: [],
+    filterLogic: 'AND',
+  })
+  const [sortState, setSortState] = useState<SortState>({ sortBy: null, sortDir: null })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
@@ -133,7 +143,7 @@ export default function RecordsPage() {
     setLoading(true)
     setError('')
     try {
-      const data = await listRecords({ page, limit })
+      const data = await listRecords({ page, limit, ...toolbarQuery, sortBy: sortState.sortBy ?? undefined, sortDir: sortState.sortDir ?? undefined })
       setItems(data.items)
       setPagination(data.pagination)
     } catch {
@@ -143,7 +153,7 @@ export default function RecordsPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, limit, t])
+  }, [page, limit, toolbarQuery, sortState, t])
 
   useEffect(() => {
     load()
@@ -195,19 +205,33 @@ export default function RecordsPage() {
         </Button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="ps-9" placeholder={t('common.search')} disabled />
-        </div>
-        <Button variant="outline" disabled>
-          {t('common.sort')}
-        </Button>
-        <Button variant="outline" disabled>
-          {t('common.filter')}
-        </Button>
-      </div>
+      <ListToolbar
+        searchFields={[
+          { value: 'domain', label: t('records.domain') },
+          { value: 'source', label: t('records.source') },
+        ]}
+        filterFields={[
+          { value: 'domain', label: t('records.domain'), type: 'string' },
+          {
+            value: 'source',
+            label: t('records.source'),
+            type: 'enum',
+            options: [
+              { value: 'LOCAL', label: 'LOCAL' },
+              { value: 'CACHE', label: 'CACHE' },
+              { value: 'FILTERED', label: 'FILTERED' },
+            ],
+          },
+          { value: 'enabled', label: t('records.enabled'), type: 'boolean' },
+          { value: 'hits', label: t('records.hits'), type: 'number' },
+          { value: 'id', label: 'ID', type: 'number' },
+        ]}
+        defaultSearchField="domain"
+        onSubmit={(payload) => {
+          setPage(1)
+          setToolbarQuery(payload)
+        }}
+      />
 
       {/* Top pagination — separated from toolbar */}
         <div className="pt-1">
@@ -228,12 +252,12 @@ export default function RecordsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-muted-foreground">
-                  <th className="px-4 py-3 text-start font-medium">{t('records.domain')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('records.source')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('records.enabled')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('records.hits')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('records.lastHit')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('records.updated')}</th>
+                  <SortableHeader column="domain" label={t('records.domain')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="source" label={t('records.source')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="enabled" label={t('records.enabled')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="hits" label={t('records.hits')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="last_hit" label={t('records.lastHit')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="updated_at" label={t('records.updated')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
                   <th className="px-4 py-3 text-end font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>

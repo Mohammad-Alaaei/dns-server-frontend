@@ -103,3 +103,14 @@
 .dashboard-charts .recharts-active-shape {
   outline: none !important;
 }
+
+
+/* Native select/option readable in light + dark */
+select {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--background));
+}
+select option {
+  color: hsl(var(--foreground));
+  background-color: hsl(var(--popover));
+}

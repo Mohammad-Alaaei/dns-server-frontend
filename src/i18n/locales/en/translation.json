@@ -61,7 +61,8 @@
     "system": "System",
     "profile": "Profile",
     "role": "Role",
-    "comingSoon": "Coming soon"
+    "comingSoon": "Coming soon",
+    "clear": "Clear"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -234,5 +235,13 @@
     "language": "Language",
     "theme": "Theme",
     "saveSuccess": "Settings saved"
+  },
+  "listToolbar": {
+    "logic": "Match",
+    "reset": "Reset filters",
+    "addRow": "Add condition",
+    "duplicate": "Duplicate filter for this column",
+    "selectValue": "Select…",
+    "value": "Value"
   }
 }

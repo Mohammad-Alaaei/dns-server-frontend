@@ -1,4 +1,5 @@
 import api, { type PaginatedResponse } from './client'
+import { buildListQueryParams, type ListQueryParams } from '@/lib/listQuery'
 
 export type DnsServerType = 'DEFAULT' | 'CUSTOM' | string
 
@@ -23,14 +24,20 @@ export interface DnsRuleItem {
   is_regex: boolean
 }
 
-export interface ListParams {
-  page?: number
-  limit?: number
-}
+export type ListParams = ListQueryParams
 
 export async function listDnsServers(params: ListParams = {}) {
   const { data } = await api.get<PaginatedResponse<DnsServerListItem>>('/dns-servers', {
-    params: { page: params.page ?? 1, limit: params.limit ?? 20 },
+    params: buildListQueryParams({
+      page: params.page ?? 1,
+      limit: params.limit ?? 20,
+      search: params.search,
+      searchField: params.searchField,
+      filters: params.filters,
+      filterLogic: params.filterLogic,
+      sortBy: params.sortBy,
+      sortDir: params.sortDir,
+    }),
   })
   return data
 }

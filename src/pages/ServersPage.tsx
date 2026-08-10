@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import {
   MoreHorizontal,
   MoreVertical,
-  Search,
   Eye,
   Power,
   PowerOff,
@@ -19,13 +18,15 @@ import {
 } from '@/api/dns-servers'
 import type { PaginationMeta } from '@/api/client'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
 import { PaginationBar } from '@/components/PaginationBar'
+import { ListToolbar } from '@/components/ListToolbar'
+import type { ListToolbarSubmit } from '@/lib/listQuery'
+import { SortableHeader, nextSortState, type SortState } from '@/components/SortableHeader'
 
 function typeBadgeVariant(type: string) {
   return type === 'DEFAULT' ? ('success' as const) : ('secondary' as const)
@@ -96,6 +97,13 @@ export default function ServersPage() {
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
   const [page, setPage] = useState(1)
   const [limit] = useState(20)
+  const [toolbarQuery, setToolbarQuery] = useState<ListToolbarSubmit>({
+    search: '',
+    searchField: 'ip',
+    filters: [],
+    filterLogic: 'AND',
+  })
+  const [sortState, setSortState] = useState<SortState>({ sortBy: null, sortDir: null })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
@@ -104,7 +112,7 @@ export default function ServersPage() {
     setLoading(true)
     setError('')
     try {
-      const data = await listDnsServers({ page, limit })
+      const data = await listDnsServers({ page, limit, ...toolbarQuery, sortBy: sortState.sortBy ?? undefined, sortDir: sortState.sortDir ?? undefined })
       setItems(data.items)
       setPagination(data.pagination)
     } catch {
@@ -114,7 +122,7 @@ export default function ServersPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, limit, t])
+  }, [page, limit, toolbarQuery, sortState, t])
 
   useEffect(() => {
     load()
@@ -150,18 +158,32 @@ export default function ServersPage() {
         </Button>
       </div>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-        <div className="relative flex-1">
-          <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input className="ps-9" placeholder={t('common.search')} disabled />
-        </div>
-        <Button variant="outline" disabled>
-          {t('common.sort')}
-        </Button>
-        <Button variant="outline" disabled>
-          {t('common.filter')}
-        </Button>
-      </div>
+      <ListToolbar
+        searchFields={[
+          { value: 'ip', label: t('servers.ip') },
+          { value: 'type', label: t('servers.type') },
+        ]}
+        filterFields={[
+          { value: 'ip', label: t('servers.ip'), type: 'string' },
+          {
+            value: 'type',
+            label: t('servers.type'),
+            type: 'enum',
+            options: [
+              { value: 'DEFAULT', label: 'DEFAULT' },
+              { value: 'CUSTOM', label: 'CUSTOM' },
+            ],
+          },
+          { value: 'enabled', label: t('servers.enabled'), type: 'boolean' },
+          { value: 'priority', label: t('servers.priority'), type: 'number' },
+          { value: 'id', label: 'ID', type: 'number' },
+        ]}
+        defaultSearchField="ip"
+        onSubmit={(payload) => {
+          setPage(1)
+          setToolbarQuery(payload)
+        }}
+      />
 
         <div className="pt-1">
           <PaginationBar
@@ -180,11 +202,11 @@ export default function ServersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-muted-foreground">
-                  <th className="px-4 py-3 text-start font-medium">{t('servers.ip')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('servers.type')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('servers.enabled')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('servers.priority')}</th>
-                  <th className="px-4 py-3 text-start font-medium">{t('servers.latency')}</th>
+                  <SortableHeader column="ip" label={t('servers.ip')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="type" label={t('servers.type')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="enabled" label={t('servers.enabled')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="priority" label={t('servers.priority')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
+                  <SortableHeader column="average_latency" label={t('servers.latency')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
                   <th className="px-4 py-3 text-start font-medium">{t('servers.stats')}</th>
                   <th className="px-4 py-3 text-end font-medium">{t('common.actions')}</th>
                 </tr>

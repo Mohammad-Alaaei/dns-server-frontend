@@ -1,4 +1,5 @@
 import api, { type PaginatedResponse } from './client'
+import { buildListQueryParams, type ListQueryParams } from '@/lib/listQuery'
 
 export type UserRole = 'superadmin' | 'admin' | 'viewer' | string
 
@@ -10,9 +11,18 @@ export interface UserListItem {
   updated_at: number
 }
 
-export async function listUsers(params: { page?: number; limit?: number } = {}) {
+export async function listUsers(params: ListQueryParams = {}) {
   const { data } = await api.get<PaginatedResponse<UserListItem>>('/auth/users', {
-    params: { page: params.page ?? 1, limit: params.limit ?? 20 },
+    params: buildListQueryParams({
+      page: params.page ?? 1,
+      limit: params.limit ?? 20,
+      search: params.search,
+      searchField: params.searchField,
+      filters: params.filters,
+      filterLogic: params.filterLogic,
+      sortBy: params.sortBy,
+      sortDir: params.sortDir,
+    }),
   })
   return data
 }

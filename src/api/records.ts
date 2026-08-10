@@ -1,4 +1,5 @@
 import api, { type PaginatedResponse } from './client'
+import { buildListQueryParams, type ListQueryParams } from '@/lib/listQuery'
 
 /** Matches GET /api/records list item */
 export interface RecordListItem {
@@ -58,17 +59,20 @@ export interface RecordDetailResponse {
   >
 }
 
-export interface ListRecordsParams {
-  page?: number
-  limit?: number
-}
+export type ListRecordsParams = ListQueryParams
 
 export async function listRecords(params: ListRecordsParams = {}) {
   const { data } = await api.get<PaginatedResponse<RecordListItem>>('/records', {
-    params: {
+    params: buildListQueryParams({
       page: params.page ?? 1,
       limit: params.limit ?? 20,
-    },
+      search: params.search,
+      searchField: params.searchField,
+      filters: params.filters,
+      filterLogic: params.filterLogic,
+      sortBy: params.sortBy,
+      sortDir: params.sortDir,
+    }),
   })
   return data
 }
