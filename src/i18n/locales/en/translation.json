@@ -156,7 +156,11 @@
     "applySuccess": "Record updated successfully.",
     "createSuccess": "Record created successfully.",
     "partialApplyError": "Some changes could not be saved. See details below. Parent domain/enabled may already be updated.",
-    "partialCreateError": "Record was created but some CNAME target hosts failed. See details below."
+    "partialCreateError": "Record was created but some CNAME target hosts failed. See details below.",
+    "addMissingCname": "Add",
+    "createMissingCnameTitle": "Create CNAME target record",
+    "createMissingCnameHint": "This host is referenced as a CNAME but has no record yet. Add A and/or AAAA addresses below.",
+    "missingCnameNeedValues": "Add at least one A or AAAA address."
   },
   "servers": {
     "title": "DNS Servers",

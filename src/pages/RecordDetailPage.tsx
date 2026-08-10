@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   MoreVertical,
   ChevronRight,
+  Plus,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -31,6 +32,7 @@ import { RelativeTime } from '@/components/RelativeTime'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { cn } from '@/lib/utils'
 import { Loading } from '@/components/Loading'
+import { CreateMissingCnameModal } from '@/components/records/CreateMissingCnameModal'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -118,6 +120,7 @@ export default function RecordDetailPage() {
 
   const [data, setData] = useState<RecordDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [missingCnameDomain, setMissingCnameDomain] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
 
@@ -546,6 +549,18 @@ export default function RecordDetailPage() {
                             {t('records.missing')}
                           </Badge>
                         )}
+                        {isMissing && canWrite && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-7 text-xs cursor-pointer"
+                            onClick={() => setMissingCnameDomain(domain)}
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            {t('records.addMissingCname')}
+                          </Button>
+                        )}
                         {source && (
                           <Badge variant={sourceBadgeVariant(String(source))} className="text-[10px]">
                             {source}
@@ -575,6 +590,13 @@ export default function RecordDetailPage() {
           </CardContent>
         </Card>
       )}
+      <CreateMissingCnameModal
+        open={missingCnameDomain != null}
+        domain={missingCnameDomain ?? ''}
+        onClose={() => setMissingCnameDomain(null)}
+        onCreated={() => void load()}
+      />
+
     </div>
   )
 }
