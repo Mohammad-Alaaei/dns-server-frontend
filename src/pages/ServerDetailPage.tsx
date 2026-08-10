@@ -15,6 +15,8 @@ import { useAuth } from '@/contexts/AuthContext'
 import {
   getDnsServer,
   updateDnsServer,
+  listDnsServers,
+  deleteDnsRule,
   listDnsServerRules,
   type DnsServerDetail,
   type DnsRuleItem,
@@ -27,6 +29,8 @@ import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
+import { ServerFormModal } from '@/components/servers/ServerFormModal'
+import { RuleFormModal } from '@/components/servers/RuleFormModal'
 
 function typeBadgeVariant(type: string) {
   return type === 'DEFAULT' ? ('success' as const) : ('secondary' as const)
@@ -49,6 +53,10 @@ export default function ServerDetailPage() {
   const [rulesLoading, setRulesLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
+  const [serverFormOpen, setServerFormOpen] = useState(false)
+  const [ruleFormOpen, setRuleFormOpen] = useState(false)
+  const [editRule, setEditRule] = useState<DnsRuleItem | null>(null)
+  const [defaultCount, setDefaultCount] = useState(0)
 
   const loadServer = useCallback(async () => {
     if (!Number.isFinite(serverId) || serverId < 1) {
@@ -61,6 +69,16 @@ export default function ServerDetailPage() {
     try {
       const s = await getDnsServer(serverId)
       setServer(s)
+      try {
+        const defaults = await listDnsServers({
+          page: 1,
+          limit: 100,
+          filters: [{ id: 'f', field: 'type', value: 'DEFAULT' }],
+        })
+        setDefaultCount(defaults.items.filter((x) => x.type === 'DEFAULT' && x.enabled).length)
+      } catch {
+        setDefaultCount(s.type === 'DEFAULT' && s.enabled ? 1 : 0)
+      }
     } catch {
       setError(t('common.error'))
       setServer(null)
@@ -97,16 +115,47 @@ export default function ServerDetailPage() {
     else navigate('/servers')
   }
 
+  function isLastDefault() {
+    return !!server && server.type === 'DEFAULT' && server.enabled && defaultCount <= 1
+  }
+
   async function handleToggleEnabled() {
     if (!server || !canWrite) return
+    if (server.enabled && server.type === 'DEFAULT' && defaultCount <= 1) {
+      setError(t('servers.lastDefaultGuard'))
+      return
+    }
     setActionLoading(true)
     try {
       const updated = await updateDnsServer(server.id, { enabled: !server.enabled })
       setServer(updated)
-    } catch {
-      setError(t('common.error'))
+      await loadServer()
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: { error?: string } } }).response?.data?.error
+      setError(typeof msg === 'string' ? msg : t('common.error'))
     } finally {
       setActionLoading(false)
+    }
+  }
+
+
+  async function handleDeleteRule(rule: DnsRuleItem) {
+    if (!canWrite) return
+    if (!window.confirm(t('servers.deleteRuleConfirm', { domain: rule.domain }))) return
+    try {
+      await deleteDnsRule(rule.id)
+      await loadRules()
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: { error?: string } } }).response?.data?.error
+      setError(typeof msg === 'string' ? msg : t('common.error'))
     }
   }
 
@@ -192,10 +241,12 @@ export default function ServerDetailPage() {
               </Button>
             }
           >
-            <DropdownMenuItem disabled>
-              <Pencil className="h-4 w-4" />
-              {t('common.edit')}
-            </DropdownMenuItem>
+            {canWrite && (
+              <DropdownMenuItem onClick={() => setServerFormOpen(true)}>
+                <Pencil className="h-4 w-4" />
+                {t('common.edit')}
+              </DropdownMenuItem>
+            )}
           </DropdownMenu>
         </div>
       </div>
@@ -261,7 +312,14 @@ export default function ServerDetailPage() {
             <CardTitle className="text-base">{t('servers.rules')}</CardTitle>
             <p className="text-sm text-muted-foreground mt-1">{t('servers.rulesHint')}</p>
           </div>
-          <Button size="sm" disabled={!canWrite} title={t('common.comingSoon')}>
+          <Button
+            size="sm"
+            disabled={!canWrite}
+            onClick={() => {
+              setEditRule(null)
+              setRuleFormOpen(true)
+            }}
+          >
             <Plus className="h-4 w-4" />
             {t('servers.addRule')}
           </Button>
@@ -331,13 +389,18 @@ export default function ServerDetailPage() {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td className="px-3 py-2 text-end">
+                      <td
+                        className="px-3 py-2 text-end"
+                        onClick={(e) => e.stopPropagation()}
+                        onPointerDown={(e) => e.stopPropagation()}
+                      >
                         <DropdownMenu
+                          align="end"
                           trigger={
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8"
+                              className="h-8 w-8 cursor-pointer"
                               aria-label={t('common.actions')}
                             >
                               <MoreHorizontal className="hidden h-4 w-4 md:block" />
@@ -345,14 +408,26 @@ export default function ServerDetailPage() {
                             </Button>
                           }
                         >
-                          <DropdownMenuItem disabled>
-                            <Pencil className="h-4 w-4" />
-                            {t('common.edit')}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem disabled destructive>
-                            <Trash2 className="h-4 w-4" />
-                            {t('common.delete')}
-                          </DropdownMenuItem>
+                          {canWrite && (
+                            <DropdownMenuItem
+                              onClick={() => {
+                                setEditRule(rule)
+                                setRuleFormOpen(true)
+                              }}
+                            >
+                              <Pencil className="h-4 w-4" />
+                              {t('common.edit')}
+                            </DropdownMenuItem>
+                          )}
+                          {canWrite && (
+                            <DropdownMenuItem
+                              onClick={() => void handleDeleteRule(rule)}
+                              destructive
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              {t('common.delete')}
+                            </DropdownMenuItem>
+                          )}
                         </DropdownMenu>
                       </td>
                     </tr>
@@ -390,6 +465,28 @@ export default function ServerDetailPage() {
           )}
         </CardContent>
       </Card>
+
+      <ServerFormModal
+        open={serverFormOpen}
+        server={server}
+        lockAsLastDefault={isLastDefault()}
+        onClose={() => setServerFormOpen(false)}
+        onSaved={(s) => {
+          setServer(s)
+          void loadServer()
+        }}
+      />
+      <RuleFormModal
+        open={ruleFormOpen}
+        serverId={serverId}
+        rule={editRule}
+        onClose={() => {
+          setRuleFormOpen(false)
+          setEditRule(null)
+        }}
+        onSaved={() => void loadRules()}
+      />
+
     </div>
   )
 }

@@ -65,6 +65,11 @@ export async function updateDnsServer(
   return data.server
 }
 
+export async function deleteDnsServer(id: number) {
+  const { data } = await api.delete<{ ok?: boolean; id?: number }>(`/dns-servers/${id}`)
+  return data
+}
+
 export async function listDnsServerRules(serverId: number, params: ListParams = {}) {
   const { data } = await api.get<PaginatedResponse<DnsRuleItem>>(
     `/dns-servers/${serverId}/rules`,

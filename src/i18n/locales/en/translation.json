@@ -184,7 +184,21 @@
     "addRule": "Add rule",
     "name": "Name",
     "address": "Address",
-    "port": "Port"
+    "port": "Port",
+    "createTitle": "Create DNS server",
+    "editTitle": "Edit DNS server",
+    "ipRequired": "IP address is required",
+    "priorityOptional": "Optional",
+    "priorityInvalid": "Priority must be a number",
+    "lastDefaultGuard": "At least one enabled DEFAULT DNS server is required.",
+    "lastDefaultDeleteGuard": "You cannot delete the last enabled DEFAULT DNS server.",
+    "lastDefaultHint": "This is the last enabled DEFAULT server — type and enabled are locked.",
+    "deleteConfirm": "Delete DNS server {{ip}}? This cannot be undone.",
+    "addRuleTitle": "Add rule",
+    "editRuleTitle": "Edit rule",
+    "ruleDomainRequired": "Domain is required",
+    "ruleDomainHelp": "Use an exact domain (e.g. example.com) or a regex pattern (e.g. ^.*\\.example\\.com$). The server detects regex automatically from the pattern.",
+    "deleteRuleConfirm": "Delete rule for \"{{domain}}\"?"
   },
   "logs": {
     "title": "Logs",

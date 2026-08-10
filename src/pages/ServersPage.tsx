@@ -27,6 +27,7 @@ import { PaginationBar } from '@/components/PaginationBar'
 import { ListToolbar } from '@/components/ListToolbar'
 import type { ListToolbarSubmit } from '@/lib/listQuery'
 import { SortableHeader, nextSortState, type SortState } from '@/components/SortableHeader'
+import { ServerFormModal } from '@/components/servers/ServerFormModal'
 
 function typeBadgeVariant(type: string) {
   return type === 'DEFAULT' ? ('success' as const) : ('secondary' as const)
@@ -38,22 +39,26 @@ function RowActions({
   actionLoading,
   onView,
   onToggle,
+  onEdit,
 }: {
   row: DnsServerListItem
   canWrite: boolean
   actionLoading: boolean
   onView: () => void
   onToggle: () => void
+  onEdit: () => void
 }) {
   const { t } = useTranslation()
   return (
     <DropdownMenu
+      align="end"
       trigger={
         <Button
           variant="ghost"
           size="icon"
           disabled={actionLoading}
           aria-label={t('common.actions')}
+          className="cursor-pointer"
         >
           <MoreHorizontal className="hidden h-4 w-4 md:block" />
           <MoreVertical className="h-4 w-4 md:hidden" />
@@ -79,10 +84,12 @@ function RowActions({
           )}
         </DropdownMenuItem>
       )}
-      <DropdownMenuItem disabled>
-        <Pencil className="h-4 w-4" />
-        {t('common.edit')}
-      </DropdownMenuItem>
+      {canWrite && (
+        <DropdownMenuItem onClick={onEdit}>
+          <Pencil className="h-4 w-4" />
+          {t('common.edit')}
+        </DropdownMenuItem>
+      )}
     </DropdownMenu>
   )
 }
@@ -107,6 +114,9 @@ export default function ServersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editServer, setEditServer] = useState<DnsServerListItem | null>(null)
+  const [defaultCount, setDefaultCount] = useState(0)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -115,6 +125,20 @@ export default function ServersPage() {
       const data = await listDnsServers({ page, limit, ...toolbarQuery, sortBy: sortState.sortBy ?? undefined, sortDir: sortState.sortDir ?? undefined })
       setItems(data.items)
       setPagination(data.pagination)
+      try {
+        const defaults = await listDnsServers({
+          page: 1,
+          limit: 100,
+          filters: [{ id: 'f', field: 'type', value: 'DEFAULT' }],
+        })
+        setDefaultCount(
+          defaults.items.filter((s) => s.type === 'DEFAULT' && s.enabled).length
+        )
+      } catch {
+        setDefaultCount(
+          data.items.filter((s) => s.type === 'DEFAULT' && s.enabled).length
+        )
+      }
     } catch {
       setError(t('common.error'))
       setItems([])
@@ -130,16 +154,30 @@ export default function ServersPage() {
 
   async function handleToggleEnabled(row: DnsServerListItem) {
     if (!canWrite) return
+    if (row.enabled && row.type === 'DEFAULT' && defaultCount <= 1) {
+      setError(t('servers.lastDefaultGuard'))
+      return
+    }
     setActionLoading(row.id)
     try {
       await updateDnsServer(row.id, { enabled: !row.enabled })
       await load()
-    } catch {
-      setError(t('common.error'))
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: { error?: string } } }).response?.data?.error
+      setError(typeof msg === 'string' ? msg : t('common.error'))
     } finally {
       setActionLoading(null)
     }
   }
+
+  function isLastDefault(row: DnsServerListItem) {
+    return row.type === 'DEFAULT' && row.enabled && defaultCount <= 1
+  }
+
 
   function goPrev() {
     setPage((p) => Math.max(1, p - 1))
@@ -152,7 +190,13 @@ export default function ServersPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t('servers.title')}</h1>
-        <Button disabled={!canWrite} title={!canWrite ? undefined : t('common.comingSoon')}>
+        <Button
+          disabled={!canWrite}
+          onClick={() => {
+            setEditServer(null)
+            setFormOpen(true)
+          }}
+        >
           <Plus className="h-4 w-4" />
           {t('common.create')}
         </Button>
@@ -266,6 +310,10 @@ export default function ServersPage() {
                           actionLoading={actionLoading === row.id}
                           onView={() => navigate(`/servers/${row.id}`)}
                           onToggle={() => handleToggleEnabled(row)}
+                          onEdit={() => {
+                            setEditServer(row)
+                            setFormOpen(true)
+                          }}
                         />
                       </td>
                     </tr>
@@ -311,6 +359,10 @@ export default function ServersPage() {
                       actionLoading={actionLoading === row.id}
                       onView={() => navigate(`/servers/${row.id}`)}
                       onToggle={() => handleToggleEnabled(row)}
+                      onEdit={() => {
+                        setEditServer(row)
+                        setFormOpen(true)
+                      }}
                     />
                   </div>
                 </div>
@@ -326,6 +378,18 @@ export default function ServersPage() {
           onPrev={goPrev}
           onNext={goNext}
         />
+
+      <ServerFormModal
+        open={formOpen}
+        server={editServer}
+        lockAsLastDefault={editServer != null && isLastDefault(editServer)}
+        onClose={() => {
+          setFormOpen(false)
+          setEditServer(null)
+        }}
+        onSaved={() => void load()}
+      />
+
     </div>
   )
 }
