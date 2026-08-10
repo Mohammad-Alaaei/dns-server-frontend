@@ -28,7 +28,7 @@ const navItems = [
   { to: '/logs', icon: ScrollText, labelKey: 'nav.logs', roles: ['superadmin'] },
   { to: '/memory', icon: MemoryStick, labelKey: 'nav.memory', roles: ['superadmin', 'admin'] },
   { to: '/users', icon: Users, labelKey: 'nav.users', roles: ['superadmin'] },
-  { to: '/settings', icon: Settings, labelKey: 'nav.settings', roles: ['superadmin', 'admin', 'viewer'] },
+  { to: '/settings', icon: Settings, labelKey: 'nav.settings', roles: ['superadmin'] },
 ]
 
 export default function AppLayout() {
@@ -143,11 +143,11 @@ export default function AppLayout() {
                     className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
                     onClick={() => {
                       setUserMenuOpen(false)
-                      navigate('/settings')
+                      navigate('/preferences')
                     }}
                   >
                     <Settings className="h-4 w-4" />
-                    {t('nav.settings')}
+                    {t('nav.preferences')}
                   </button>
                   <button
                     type="button"

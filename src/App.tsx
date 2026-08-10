@@ -14,6 +14,7 @@ import LogDetailPage from '@/pages/LogDetailPage'
 import MemoryPage from '@/pages/MemoryPage'
 import UsersPage from '@/pages/UsersPage'
 import SettingsPage from '@/pages/SettingsPage'
+import SystemSettingsPage from '@/pages/SystemSettingsPage'
 import { type ReactNode } from 'react'
 import { Loading } from './components/Loading'
 
@@ -51,7 +52,8 @@ function AppRoutes() {
         <Route path="logs/:filename" element={<LogDetailPage />} />
         <Route path="memory" element={<MemoryPage />} />
         <Route path="users" element={<UsersPage />} />
-        <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings" element={<SystemSettingsPage />} />
+        <Route path="preferences" element={<SettingsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

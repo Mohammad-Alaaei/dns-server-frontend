@@ -11,7 +11,8 @@
     "memory": "Memory / Cache",
     "system": "System",
     "users": "Users",
-    "settings": "Settings"
+    "settings": "Settings",
+    "preferences": "Preferences"
   },
   "auth": {
     "login": "Login",
@@ -288,10 +289,11 @@
     }
   },
   "settings": {
-    "title": "Settings",
+    "title": "Preferences",
     "language": "Language",
     "theme": "Theme",
-    "saveSuccess": "Settings saved"
+    "saveSuccess": "Settings saved",
+    "preferencesTitle": "Preferences"
   },
   "listToolbar": {
     "logic": "Match",
@@ -300,5 +302,32 @@
     "duplicate": "Duplicate filter for this column",
     "selectValue": "Select…",
     "value": "Value"
+  },
+  "systemSettings": {
+    "title": "System settings",
+    "subtitle": "Runtime configuration for the DNS server (superadmin only).",
+    "saveSuccess": "System settings saved.",
+    "cacheSection": "Cache",
+    "cacheLevel": "Cache level",
+    "cacheLevelHelp": "ALL, CUSTOM_ONLY, FILTERED_ONLY, or NONE.",
+    "cacheExpire": "Expire time (seconds)",
+    "cacheExpireHelp": "How long cached answers are considered fresh.",
+    "cacheFlush": "Flush interval (ms)",
+    "cacheFlushHelp": "How often the cache is flushed to storage (minimum 1000).",
+    "filterIps": "Filter IPs",
+    "ipListHelp": "One IPv4/IPv6 per line, or comma-separated.",
+    "ignoreSection": "Ignore clients",
+    "ignoreIps": "Ignore IPs",
+    "ignoreIpsHelp": "Queries from these client IPs are ignored.",
+    "dnsSection": "DNS answers",
+    "dnsTtl": "Default TTL (seconds)",
+    "dnsTtlHelp": "Default TTL used when building answers.",
+    "dnsTimeout": "Upstream timeout (ms)",
+    "dnsTimeoutHelp": "Upstream query timeout (minimum 100).",
+    "serverSection": "Server identity",
+    "ptrHostname": "PTR hostname",
+    "ptrHostnameHelp": "Hostname used for PTR-style responses.",
+    "debugPrefix": "Debug prefix",
+    "debugPrefixHelp": "Domain prefix that enables debug mode (e.g. _.)."
   }
 }

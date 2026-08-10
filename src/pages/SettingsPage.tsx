@@ -10,7 +10,7 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold tracking-tight">{t('settings.title')}</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t('settings.preferencesTitle')}</h1>
 
       <Card>
         <CardHeader>
