@@ -96,6 +96,11 @@ export default function AppLayout() {
             </NavLink>
           ))}
         </nav>
+        <div className="shrink-0 border-t px-4 py-3">
+          <p className="text-[10px] text-muted-foreground tabular-nums">
+            v{__APP_VERSION__}
+          </p>
+        </div>
       </aside>
 
       {/* Main area — offset by sidebar width on desktop */}
