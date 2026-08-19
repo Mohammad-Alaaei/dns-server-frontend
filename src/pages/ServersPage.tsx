@@ -24,8 +24,9 @@ import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
 import { PaginationBar } from '@/components/PaginationBar'
 import { ListToolbar } from '@/components/ListToolbar'
-import type { ListToolbarSubmit } from '@/lib/listQuery'
-import { SortableHeader, nextSortState, type SortState } from '@/components/SortableHeader'
+import { SortableHeader, nextSortState } from '@/components/SortableHeader'
+import { CopyButton } from '@/components/CopyButton'
+import { usePersistedListState } from '@/hooks/usePersistedListState'
 import { ServerFormModal } from '@/components/servers/ServerFormModal'
 
 function typeBadgeVariant(type: string) {
@@ -95,15 +96,18 @@ export default function ServersPage() {
 
   const [items, setItems] = useState<DnsServerListItem[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
-  const [page, setPage] = useState(1)
   const [limit] = useState(20)
-  const [toolbarQuery, setToolbarQuery] = useState<ListToolbarSubmit>({
-    search: '',
-    searchField: 'ip',
-    filters: [],
-    filterLogic: 'AND',
-  })
-  const [sortState, setSortState] = useState<SortState>({ sortBy: null, sortDir: null })
+  const { page, setPage, toolbarQuery, setToolbarQuery, sortState, setSortState } =
+    usePersistedListState('servers', {
+      page: 1,
+      toolbarQuery: {
+        search: '',
+        searchField: 'ip',
+        filters: [],
+        filterLogic: 'AND',
+      },
+      sortState: { sortBy: null, sortDir: null },
+    })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
@@ -196,6 +200,10 @@ export default function ServersPage() {
       </div>
 
       <ListToolbar
+        defaultSearch={toolbarQuery.search}
+        defaultSearchField={toolbarQuery.searchField}
+        defaultFilters={toolbarQuery.filters}
+        defaultFilterLogic={toolbarQuery.filterLogic}
         searchFields={[
           { value: 'ip', label: t('servers.ip') },
           { value: 'type', label: t('servers.type') },
@@ -215,7 +223,6 @@ export default function ServersPage() {
           { value: 'priority', label: t('servers.priority'), type: 'number' },
           { value: 'id', label: 'ID', type: 'number' },
         ]}
-        defaultSearchField="ip"
         onSubmit={(payload) => {
           setPage(1)
           setToolbarQuery(payload)
@@ -265,17 +272,20 @@ export default function ServersPage() {
                   items.map((row) => (
                     <tr
                       key={row.id}
-                      className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
+                      className="group border-b last:border-0 hover:bg-muted/30 cursor-pointer"
                       onClick={() => navigate(`/servers/${row.id}`)}
                     >
                       <td className="px-4 py-3 font-medium font-mono">
-                        <Link
-                          to={`/servers/${row.id}`}
-                          className="hover:underline cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {row.ip}
-                        </Link>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <Link
+                            to={`/servers/${row.id}`}
+                            className="hover:underline cursor-pointer truncate"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {row.ip}
+                          </Link>
+                          <CopyButton text={row.ip} />
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={typeBadgeVariant(row.type)}>{row.type}</Badge>
@@ -325,11 +335,14 @@ export default function ServersPage() {
               items.map((row) => (
                 <div
                   key={row.id}
-                  className="flex items-start gap-3 px-4 py-3 cursor-pointer"
+                  className="group flex items-start gap-3 px-4 py-3 cursor-pointer"
                   onClick={() => navigate(`/servers/${row.id}`)}
                 >
                   <div className="flex-1 min-w-0 space-y-1">
-                    <p className="font-medium font-mono truncate">{row.ip}</p>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <p className="font-medium font-mono truncate">{row.ip}</p>
+                      <CopyButton text={row.ip} />
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       <Badge variant={typeBadgeVariant(row.type)}>{row.type}</Badge>
                       <Badge variant={row.enabled ? 'success' : 'muted'}>

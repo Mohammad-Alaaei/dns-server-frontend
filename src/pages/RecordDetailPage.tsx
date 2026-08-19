@@ -32,6 +32,7 @@ import { RelativeTime } from '@/components/RelativeTime'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { cn } from '@/lib/utils'
 import { Loading } from '@/components/Loading'
+import { CopyButton } from '@/components/CopyButton'
 import { CreateMissingCnameModal } from '@/components/records/CreateMissingCnameModal'
 
 function sourceBadgeVariant(source: string) {
@@ -268,7 +269,10 @@ export default function RecordDetailPage() {
             <ArrowLeft className="h-4 w-4" />
             {t('common.back')}
           </Button>
-          <h1 className="text-2xl font-bold tracking-tight break-all">{record.domain}</h1>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-2xl font-bold tracking-tight break-all">{record.domain}</h1>
+            <CopyButton text={record.domain} alwaysVisible />
+          </div>
           <div className="flex flex-wrap gap-2">
             <Badge variant={sourceBadgeVariant(record.source)}>{record.source}</Badge>
             <Badge variant={record.enabled ? 'success' : 'muted'}>

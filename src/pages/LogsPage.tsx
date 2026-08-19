@@ -1,13 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
+import { usePersistedListState } from '@/hooks/usePersistedListState'
 import { Link, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
-import { MoreHorizontal, MoreVertical, Eye } from 'lucide-react'
 import { listLogFiles, type LogFileItem } from '@/api/logs'
 import type { PaginationMeta } from '@/api/client'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
 import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
 import { PaginationBar } from '@/components/PaginationBar'
@@ -27,8 +25,13 @@ export default function LogsPage() {
 
   const [items, setItems] = useState<LogFileItem[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
-  const [page, setPage] = useState(1)
   const [limit] = useState(20)
+  const { page, setPage } =
+    usePersistedListState('logs', {
+      page: 1,
+      toolbarQuery: { search: '', searchField: 'name', filters: [], filterLogic: 'AND' },
+      sortState: { sortBy: null, sortDir: null },
+    })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 

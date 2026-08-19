@@ -28,8 +28,8 @@ import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
 import { PaginationBar } from '@/components/PaginationBar'
 import { ListToolbar } from '@/components/ListToolbar'
-import type { ListToolbarSubmit } from '@/lib/listQuery'
-import { SortableHeader, nextSortState, type SortState } from '@/components/SortableHeader'
+import { usePersistedListState } from '@/hooks/usePersistedListState'
+import { SortableHeader, nextSortState } from '@/components/SortableHeader'
 import { RelativeTime } from '@/components/RelativeTime'
 
 function roleBadgeVariant(role: string) {
@@ -46,6 +46,7 @@ function roleBadgeVariant(role: string) {
 }
 
 function RowActions({
+  row: _row,
   isSelf,
 }: {
   row: UserListItem
@@ -234,15 +235,18 @@ export default function UsersPage() {
 
   const [items, setItems] = useState<UserListItem[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
-  const [page, setPage] = useState(1)
   const [limit] = useState(20)
-  const [toolbarQuery, setToolbarQuery] = useState<ListToolbarSubmit>({
-    search: '',
-    searchField: 'username',
-    filters: [],
-    filterLogic: 'AND',
-  })
-  const [sortState, setSortState] = useState<SortState>({ sortBy: null, sortDir: null })
+  const { page, setPage, toolbarQuery, setToolbarQuery, sortState, setSortState } =
+    usePersistedListState('users', {
+      page: 1,
+      toolbarQuery: {
+        search: '',
+        searchField: 'username',
+        filters: [],
+        filterLogic: 'AND',
+      },
+      sortState: { sortBy: null, sortDir: null },
+    })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [createOpen, setCreateOpen] = useState(false)
@@ -289,6 +293,10 @@ export default function UsersPage() {
       </div>
 
       <ListToolbar
+        defaultSearch={toolbarQuery.search}
+        defaultSearchField={toolbarQuery.searchField}
+        defaultFilters={toolbarQuery.filters}
+        defaultFilterLogic={toolbarQuery.filterLogic}
         searchFields={[
           { value: 'username', label: t('users.username') },
           { value: 'role', label: t('users.role') },
@@ -307,7 +315,6 @@ export default function UsersPage() {
           },
           { value: 'id', label: 'ID', type: 'number' },
         ]}
-        defaultSearchField="username"
         onSubmit={(payload) => {
           setPage(1)
           setToolbarQuery(payload)

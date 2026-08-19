@@ -11,6 +11,7 @@ import {
   Pencil,
   Trash2,
   Plus,
+  RefreshCw,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -31,8 +32,9 @@ import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
 import { PaginationBar } from '@/components/PaginationBar'
 import { ListToolbar } from '@/components/ListToolbar'
-import type { ListToolbarSubmit } from '@/lib/listQuery'
-import { SortableHeader, nextSortState, type SortState } from '@/components/SortableHeader'
+import { SortableHeader, nextSortState } from '@/components/SortableHeader'
+import { CopyButton } from '@/components/CopyButton'
+import { usePersistedListState } from '@/hooks/usePersistedListState'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -137,15 +139,18 @@ export default function RecordsPage() {
 
   const [items, setItems] = useState<RecordListItem[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
-  const [page, setPage] = useState(1)
   const [limit] = useState(20)
-  const [toolbarQuery, setToolbarQuery] = useState<ListToolbarSubmit>({
-    search: '',
-    searchField: 'domain',
-    filters: [],
-    filterLogic: 'AND',
-  })
-  const [sortState, setSortState] = useState<SortState>({ sortBy: null, sortDir: null })
+  const { page, setPage, toolbarQuery, setToolbarQuery, sortState, setSortState } =
+    usePersistedListState('records', {
+      page: 1,
+      toolbarQuery: {
+        search: '',
+        searchField: 'domain',
+        filters: [],
+        filterLogic: 'AND',
+      },
+      sortState: { sortBy: null, sortDir: null },
+    })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
@@ -240,16 +245,34 @@ export default function RecordsPage() {
     <div className="space-y-4">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t('records.title')}</h1>
-        <Button
-          disabled={!canWrite}
-          onClick={() => canWrite && navigate('/records/new')}
-        >
-          <Plus className="h-4 w-4" />
-          {t('common.create')}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="cursor-pointer"
+            disabled={loading}
+            onClick={() => void load()}
+            aria-label={t('common.refresh')}
+            title={t('common.refresh')}
+          >
+            <RefreshCw className={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+          </Button>
+          <Button
+            disabled={!canWrite}
+            onClick={() => canWrite && navigate('/records/new')}
+          >
+            <Plus className="h-4 w-4" />
+            {t('common.create')}
+          </Button>
+        </div>
       </div>
 
       <ListToolbar
+        defaultSearch={toolbarQuery.search}
+        defaultSearchField={toolbarQuery.searchField}
+        defaultFilters={toolbarQuery.filters}
+        defaultFilterLogic={toolbarQuery.filterLogic}
         searchFields={[
           { value: 'domain', label: t('records.domain') },
           { value: 'source', label: t('records.source') },
@@ -270,7 +293,6 @@ export default function RecordsPage() {
           { value: 'hits', label: t('records.hits'), type: 'number' },
           { value: 'id', label: 'ID', type: 'number' },
         ]}
-        defaultSearchField="domain"
         onSubmit={(payload) => {
           setPage(1)
           setToolbarQuery(payload)
@@ -322,17 +344,20 @@ export default function RecordsPage() {
                   items.map((row) => (
                     <tr
                       key={row.id}
-                      className="border-b last:border-0 hover:bg-muted/30 cursor-pointer"
+                      className="group border-b last:border-0 hover:bg-muted/30 cursor-pointer"
                       onClick={() => navigate(`/records/${row.id}`)}
                     >
                       <td className="px-4 py-3 font-medium">
-                        <Link
-                          to={`/records/${row.id}`}
-                          className="hover:underline cursor-pointer"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {row.domain}
-                        </Link>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <Link
+                            to={`/records/${row.id}`}
+                            className="hover:underline cursor-pointer truncate"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {row.domain}
+                          </Link>
+                          <CopyButton text={row.domain} />
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <Badge variant={sourceBadgeVariant(row.source)}>{row.source}</Badge>
@@ -384,11 +409,14 @@ export default function RecordsPage() {
               items.map((row) => (
                 <div
                   key={row.id}
-                  className="flex items-start gap-3 px-4 py-3 cursor-pointer"
+                  className="group flex items-start gap-3 px-4 py-3 cursor-pointer"
                   onClick={() => navigate(`/records/${row.id}`)}
                 >
                   <div className="flex-1 min-w-0 space-y-1">
-                    <p className="font-medium truncate">{row.domain}</p>
+                    <div className="flex items-center gap-1 min-w-0">
+                      <p className="font-medium truncate">{row.domain}</p>
+                      <CopyButton text={row.domain} />
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       <Badge variant={sourceBadgeVariant(row.source)}>{row.source}</Badge>
                       <Badge variant={row.enabled ? 'success' : 'muted'}>

@@ -63,7 +63,10 @@
     "profile": "Profile",
     "role": "Role",
     "comingSoon": "Coming soon",
-    "clear": "Clear"
+    "clear": "Clear",
+    "copy": "Copy",
+    "copied": "Copied",
+    "refresh": "Refresh"
   },
   "dashboard": {
     "title": "Dashboard",
