@@ -96,8 +96,39 @@ export async function listRecords(params: ListRecordsParams = {}) {
 }
 
 export async function getRecord(id: number) {
-  const { data } = await api.get<RecordDetailResponse>(`/records/${id}`)
-  return data
+  const { data } = await api.get<RecordDetailResponse & {
+    record?: RecordDetail & {
+      cnameChain?: RecordDetailResponse['cnameChain']
+      resolvedServers?: RecordDetailResponse['resolvedServers']
+    }
+  }>(`/records/${id}`)
+
+  // Backend nests cnameChain / resolvedServers inside `record`; normalize to top-level
+  // so detail UI and form loaders can use a stable shape.
+  const recordRaw = (data as { record?: RecordDetail }).record ?? (data as unknown as RecordDetail)
+  const nested = recordRaw as RecordDetail & {
+    cnameChain?: RecordDetailResponse['cnameChain']
+    resolvedServers?: RecordDetailResponse['resolvedServers']
+  }
+  const cnameChain =
+    (data as RecordDetailResponse).cnameChain ?? nested.cnameChain ?? []
+  const resolvedServers =
+    (data as RecordDetailResponse).resolvedServers ?? nested.resolvedServers ?? []
+
+  const {
+    cnameChain: _c,
+    resolvedServers: _r,
+    ...recordRest
+  } = nested as RecordDetail & {
+    cnameChain?: unknown
+    resolvedServers?: unknown
+  }
+
+  return {
+    record: recordRest as RecordDetail,
+    cnameChain,
+    resolvedServers,
+  } satisfies RecordDetailResponse
 }
 
 export async function createRecord(body: {
