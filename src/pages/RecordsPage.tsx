@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import {
   MoreHorizontal,
   MoreVertical,
-  Eye,
   Power,
   PowerOff,
   ArrowUpCircle,
@@ -54,7 +53,6 @@ function RowActions({
   canPromote,
   canDemote,
   actionLoading,
-  onView,
   onToggle,
   onPromote,
   onDemote,
@@ -66,7 +64,6 @@ function RowActions({
   canPromote: boolean
   canDemote: boolean
   actionLoading: boolean
-  onView: () => void
   onToggle: () => void
   onPromote: () => void
   onDemote: () => void
@@ -89,10 +86,6 @@ function RowActions({
         </Button>
       }
     >
-      <DropdownMenuItem onClick={onView}>
-        <Eye className="h-4 w-4" />
-        {t('common.view')}
-      </DropdownMenuItem>
       {canWrite && (
         <DropdownMenuItem onClick={onToggle}>
           {row.enabled ? (
@@ -367,7 +360,6 @@ export default function RecordsPage() {
                           canPromote={canPromoteRow(row)}
                           canDemote={canDemoteRow(row)}
                           actionLoading={actionLoading === row.id}
-                          onView={() => navigate(`/records/${row.id}`)}
                           onToggle={() => handleToggleEnabled(row)}
                           onPromote={() => handlePromote(row)}
                           onDemote={() => handleDemote(row)}
@@ -417,7 +409,6 @@ export default function RecordsPage() {
                       canPromote={canPromoteRow(row)}
                       canDemote={canDemoteRow(row)}
                       actionLoading={actionLoading === row.id}
-                      onView={() => navigate(`/records/${row.id}`)}
                       onToggle={() => handleToggleEnabled(row)}
                       onPromote={() => handlePromote(row)}
                       onDemote={() => handleDemote(row)}

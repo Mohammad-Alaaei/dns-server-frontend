@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next'
 import {
   MoreHorizontal,
   MoreVertical,
-  Eye,
   Power,
   PowerOff,
   Pencil,
@@ -37,14 +36,12 @@ function RowActions({
   row,
   canWrite,
   actionLoading,
-  onView,
   onToggle,
   onEdit,
 }: {
   row: DnsServerListItem
   canWrite: boolean
   actionLoading: boolean
-  onView: () => void
   onToggle: () => void
   onEdit: () => void
 }) {
@@ -65,10 +62,6 @@ function RowActions({
         </Button>
       }
     >
-      <DropdownMenuItem onClick={onView}>
-        <Eye className="h-4 w-4" />
-        {t('common.view')}
-      </DropdownMenuItem>
       {canWrite && (
         <DropdownMenuItem onClick={onToggle}>
           {row.enabled ? (
@@ -308,7 +301,6 @@ export default function ServersPage() {
                           row={row}
                           canWrite={canWrite}
                           actionLoading={actionLoading === row.id}
-                          onView={() => navigate(`/servers/${row.id}`)}
                           onToggle={() => handleToggleEnabled(row)}
                           onEdit={() => {
                             setEditServer(row)
@@ -357,7 +349,6 @@ export default function ServersPage() {
                       row={row}
                       canWrite={canWrite}
                       actionLoading={actionLoading === row.id}
-                      onView={() => navigate(`/servers/${row.id}`)}
                       onToggle={() => handleToggleEnabled(row)}
                       onEdit={() => {
                         setEditServer(row)

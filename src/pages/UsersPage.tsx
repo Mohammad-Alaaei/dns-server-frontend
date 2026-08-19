@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next'
 import {
   MoreHorizontal,
   MoreVertical,
-  Eye,
   Pencil,
   Trash2,
   Plus,
@@ -62,10 +61,6 @@ function RowActions({
         </Button>
       }
     >
-      <DropdownMenuItem disabled>
-        <Eye className="h-4 w-4" />
-        {t('common.view')}
-      </DropdownMenuItem>
       <DropdownMenuItem disabled>
         <Pencil className="h-4 w-4" />
         {t('common.edit')}

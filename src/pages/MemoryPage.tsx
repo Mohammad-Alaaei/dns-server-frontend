@@ -9,7 +9,6 @@ import {
   MemoryStick,
   MoreHorizontal,
   MoreVertical,
-  Eye,
   Pencil,
   Trash2,
 } from 'lucide-react'
@@ -65,10 +64,6 @@ function RowActionsMenu() {
         </Button>
       }
     >
-      <DropdownMenuItem disabled>
-        <Eye className="h-4 w-4" />
-        {t('common.view')}
-      </DropdownMenuItem>
       <DropdownMenuItem disabled>
         <Pencil className="h-4 w-4" />
         {t('common.edit')}

@@ -98,19 +98,18 @@ export default function LogsPage() {
                   <th className="px-4 py-3 text-start font-medium">{t('logs.size')}</th>
                   <th className="px-4 py-3 text-start font-medium">{t('logs.modified')}</th>
                   <th className="px-4 py-3 text-start font-medium">{t('logs.status')}</th>
-                  <th className="px-4 py-3 text-end font-medium">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5}>
+                    <td colSpan={4}>
                       <Loading fullScreen={false} />
                     </td>
                   </tr>
                 ) : items.length === 0 ? (
                   <tr>
-                    <td colSpan={5}>
+                    <td colSpan={4}>
                       <NoResult fullScreen={false} />
                     </td>
                   </tr>
@@ -143,25 +142,6 @@ export default function LogsPage() {
                           <span className="text-muted-foreground">—</span>
                         )}
                       </td>
-                      <td
-                        className="px-4 py-3 text-end"
-                        onClick={(e) => e.stopPropagation()}
-                        onPointerDown={(e) => e.stopPropagation()}
-                      >
-                        <DropdownMenu
-                          trigger={
-                            <Button variant="ghost" size="icon" aria-label={t('common.actions')}>
-                              <MoreHorizontal className="hidden h-4 w-4 md:block" />
-                              <MoreVertical className="h-4 w-4 md:hidden" />
-                            </Button>
-                          }
-                        >
-                          <DropdownMenuItem onClick={() => openLog(row.name)}>
-                            <Eye className="h-4 w-4" />
-                            {t('common.view')}
-                          </DropdownMenuItem>
-                        </DropdownMenu>
-                      </td>
                     </tr>
                   ))
                 )}
@@ -189,23 +169,6 @@ export default function LogsPage() {
                         {formatBytes(row.size)} · <RelativeTime value={row.mtime} />
                       </span>
                     </div>
-                  </div>
-                  <div
-                    onClick={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()}
-                  >
-                    <DropdownMenu
-                      trigger={
-                        <Button variant="ghost" size="icon" aria-label={t('common.actions')}>
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      }
-                    >
-                      <DropdownMenuItem onClick={() => openLog(row.name)}>
-                        <Eye className="h-4 w-4" />
-                        {t('common.view')}
-                      </DropdownMenuItem>
-                    </DropdownMenu>
                   </div>
                 </div>
               ))
