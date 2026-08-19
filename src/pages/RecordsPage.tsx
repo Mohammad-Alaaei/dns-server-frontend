@@ -12,6 +12,7 @@ import {
   Trash2,
   Plus,
   RefreshCw,
+  Globe2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -26,7 +27,7 @@ import type { PaginationMeta } from '@/api/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuItem, DropdownMenuSub } from '@/components/ui/dropdown-menu'
 import { RelativeTime } from '@/components/RelativeTime'
 import { Loading } from '@/components/Loading'
 import { NoResult } from '@/components/NoResult'
@@ -35,6 +36,8 @@ import { ListToolbar } from '@/components/ListToolbar'
 import { SortableHeader, nextSortState } from '@/components/SortableHeader'
 import { CopyButton } from '@/components/CopyButton'
 import { usePersistedListState } from '@/hooks/usePersistedListState'
+import { useMxtoolboxQuota } from '@/hooks/useMxtoolboxQuota'
+import { ResolveMxtoolboxModal } from '@/components/records/ResolveMxtoolboxModal'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -55,22 +58,28 @@ function RowActions({
   canPromote,
   canDemote,
   actionLoading,
+  resolveRemaining,
+  resolveDisabled,
   onToggle,
   onPromote,
   onDemote,
   onEdit,
   onDelete,
+  onResolveMx,
 }: {
   row: RecordListItem
   canWrite: boolean
   canPromote: boolean
   canDemote: boolean
   actionLoading: boolean
+  resolveRemaining: number
+  resolveDisabled: boolean
   onToggle: () => void
   onPromote: () => void
   onDemote: () => void
   onEdit: () => void
   onDelete: () => void
+  onResolveMx: () => void
 }) {
   const { t } = useTranslation()
   return (
@@ -122,6 +131,17 @@ function RowActions({
         </DropdownMenuItem>
       )}
       {canWrite && (
+        <DropdownMenuSub label={t('resolve.menu')} icon={<Globe2 className="h-4 w-4" />}>
+          <DropdownMenuItem onClick={onResolveMx} disabled={resolveDisabled}>
+            <Globe2 className="h-4 w-4" />
+            {t('resolve.mxtoolbox')}
+            <span className="ms-auto text-[10px] tabular-nums text-muted-foreground">
+              {resolveRemaining}
+            </span>
+          </DropdownMenuItem>
+        </DropdownMenuSub>
+      )}
+      {canWrite && (
         <DropdownMenuItem onClick={onDelete} destructive>
           <Trash2 className="h-4 w-4" />
           {t('common.delete')}
@@ -136,6 +156,8 @@ export default function RecordsPage() {
   const { hasRole } = useAuth()
   const navigate = useNavigate()
   const canWrite = hasRole('superadmin', 'admin')
+  const mxQuota = useMxtoolboxQuota(canWrite)
+  const [resolveTarget, setResolveTarget] = useState<RecordListItem | null>(null)
 
   const [items, setItems] = useState<RecordListItem[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
@@ -390,6 +412,9 @@ export default function RecordsPage() {
                           onDemote={() => handleDemote(row)}
                           onEdit={() => navigate(`/records/${row.id}/edit`)}
                           onDelete={() => handleDelete(row)}
+                          resolveRemaining={mxQuota.remaining}
+                          resolveDisabled={!mxQuota.hasKey || mxQuota.remaining < 1 || mxQuota.loading}
+                          onResolveMx={() => setResolveTarget(row)}
                         />
                       </td>
                     </tr>
@@ -442,6 +467,9 @@ export default function RecordsPage() {
                       onDemote={() => handleDemote(row)}
                       onEdit={() => navigate(`/records/${row.id}/edit`)}
                       onDelete={() => handleDelete(row)}
+                      resolveRemaining={mxQuota.remaining}
+                      resolveDisabled={!mxQuota.hasKey || mxQuota.remaining < 1 || mxQuota.loading}
+                      onResolveMx={() => setResolveTarget(row)}
                     />
                   </div>
                 </div>
@@ -460,6 +488,17 @@ export default function RecordsPage() {
           onNext={goNext}
         />
       )}
+      <ResolveMxtoolboxModal
+        open={resolveTarget != null}
+        domain={resolveTarget?.domain ?? ''}
+        recordId={resolveTarget?.id ?? 0}
+        apiKey={mxQuota.apiKey}
+        remaining={mxQuota.remaining}
+        onClose={() => setResolveTarget(null)}
+        onApplied={() => void load()}
+        onQuotaConsumed={() => { /* hook cache already updated */ }}
+      />
+
     </div>
   )
 }

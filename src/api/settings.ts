@@ -17,6 +17,12 @@ export interface SystemSettings {
     ptrHostname: string
     debugPrefix: string
   }
+  /** Optional external resolvers config (stored in system settings JSON). */
+  resolvers?: {
+    mxtoolbox?: {
+      apiKey?: string
+    }
+  }
 }
 
 export interface UserSettings {

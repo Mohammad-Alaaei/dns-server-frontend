@@ -13,6 +13,7 @@ import {
   MoreVertical,
   ChevronRight,
   Plus,
+  Globe2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import {
@@ -27,13 +28,15 @@ import {
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { DropdownMenu, DropdownMenuItem } from '@/components/ui/dropdown-menu'
+import { DropdownMenu, DropdownMenuItem, DropdownMenuSub } from '@/components/ui/dropdown-menu'
 import { RelativeTime } from '@/components/RelativeTime'
 import { Breadcrumbs } from '@/components/Breadcrumbs'
 import { cn } from '@/lib/utils'
 import { Loading } from '@/components/Loading'
 import { CopyButton } from '@/components/CopyButton'
 import { CreateMissingCnameModal } from '@/components/records/CreateMissingCnameModal'
+import { ResolveMxtoolboxModal } from '@/components/records/ResolveMxtoolboxModal'
+import { useMxtoolboxQuota } from '@/hooks/useMxtoolboxQuota'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -118,6 +121,8 @@ export default function RecordDetailPage() {
       : ''
   const { hasRole } = useAuth()
   const canWrite = hasRole('superadmin', 'admin')
+  const mxQuota = useMxtoolboxQuota(canWrite)
+  const [resolveOpen, setResolveOpen] = useState(false)
 
   const [data, setData] = useState<RecordDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -334,6 +339,20 @@ export default function RecordDetailPage() {
                 <Pencil className="h-4 w-4" />
                 {t('common.edit')}
               </DropdownMenuItem>
+            )}
+            {canWrite && (
+              <DropdownMenuSub label={t('resolve.menu')} icon={<Globe2 className="h-4 w-4" />}>
+                <DropdownMenuItem
+                  onClick={() => setResolveOpen(true)}
+                  disabled={!mxQuota.hasKey || mxQuota.remaining < 1 || mxQuota.loading}
+                >
+                  <Globe2 className="h-4 w-4" />
+                  {t('resolve.mxtoolbox')}
+                  <span className="ms-auto text-[10px] tabular-nums text-muted-foreground">
+                    {mxQuota.remaining}
+                  </span>
+                </DropdownMenuItem>
+              </DropdownMenuSub>
             )}
             {canDemote && (
               <DropdownMenuItem onClick={() => void handleDemote()}>
@@ -599,6 +618,16 @@ export default function RecordDetailPage() {
         domain={missingCnameDomain ?? ''}
         onClose={() => setMissingCnameDomain(null)}
         onCreated={() => void load()}
+      />
+      <ResolveMxtoolboxModal
+        open={resolveOpen}
+        domain={record.domain}
+        recordId={record.id}
+        apiKey={mxQuota.apiKey}
+        remaining={mxQuota.remaining}
+        onClose={() => setResolveOpen(false)}
+        onApplied={() => void load()}
+        onQuotaConsumed={() => {}}
       />
 
     </div>

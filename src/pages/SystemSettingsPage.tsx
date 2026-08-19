@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Loading } from '@/components/Loading'
+import { getMxtoolboxApiKey, setMxtoolboxApiKey } from '@/lib/mxtoolboxKey'
 
 const CACHE_LEVELS = ['ALL', 'CUSTOM_ONLY', 'FILTERED_ONLY', 'NONE'] as const
 
@@ -38,6 +39,7 @@ function emptyForm(): SystemSettings {
     ignoreIps: [],
     dns: { ttl: 60, timeout: 8000 },
     server: { ptrHostname: 'localhost.com', debugPrefix: '_.' },
+    resolvers: { mxtoolbox: { apiKey: '' } },
   }
 }
 
@@ -76,6 +78,11 @@ export default function SystemSettingsPage() {
           ptrHostname: s.server?.ptrHostname ?? '',
           debugPrefix: s.server?.debugPrefix ?? '',
         },
+        resolvers: {
+          mxtoolbox: {
+            apiKey: s.resolvers?.mxtoolbox?.apiKey || getMxtoolboxApiKey() || '',
+          },
+        },
       })
       setFilterIpsText(ipsToText(s.cache?.filterIps))
       setIgnoreIpsText(ipsToText(s.ignoreIps))
@@ -113,6 +120,11 @@ export default function SystemSettingsPage() {
         ptrHostname: form.server.ptrHostname,
         debugPrefix: form.server.debugPrefix,
       },
+      resolvers: {
+        mxtoolbox: {
+          apiKey: form.resolvers?.mxtoolbox?.apiKey ?? '',
+        },
+      },
     }
   }, [form, filterIpsText, ignoreIpsText])
 
@@ -138,9 +150,18 @@ export default function SystemSettingsPage() {
           ptrHostname: saved.server?.ptrHostname ?? form.server.ptrHostname,
           debugPrefix: saved.server?.debugPrefix ?? form.server.debugPrefix,
         },
+        resolvers: {
+          mxtoolbox: {
+            apiKey:
+              saved.resolvers?.mxtoolbox?.apiKey ??
+              form.resolvers?.mxtoolbox?.apiKey ??
+              '',
+          },
+        },
       })
       setFilterIpsText(ipsToText(saved.cache?.filterIps))
       setIgnoreIpsText(ipsToText(saved.ignoreIps))
+      setMxtoolboxApiKey(form.resolvers?.mxtoolbox?.apiKey ?? '')
       setSuccess(t('systemSettings.saveSuccess'))
     } catch (err: unknown) {
       const msg =
@@ -357,6 +378,35 @@ export default function SystemSettingsPage() {
             />
             <p className="text-xs text-muted-foreground">{t('systemSettings.debugPrefixHelp')}</p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Resolvers */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">{t('systemSettings.resolversSection')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Label htmlFor="mx-key">{t('systemSettings.mxtoolboxApiKey')}</Label>
+          <Input
+            id="mx-key"
+            type="password"
+            autoComplete="off"
+            className="font-mono"
+            value={form.resolvers?.mxtoolbox?.apiKey ?? ''}
+            disabled={saving}
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                resolvers: {
+                  ...f.resolvers,
+                  mxtoolbox: { apiKey: e.target.value },
+                },
+              }))
+            }
+            placeholder="MXToolbox API key"
+          />
+          <p className="text-xs text-muted-foreground">{t('systemSettings.mxtoolboxApiKeyHelp')}</p>
         </CardContent>
       </Card>
 
