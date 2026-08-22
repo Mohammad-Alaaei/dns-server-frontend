@@ -1,6 +1,6 @@
 import api from './client'
 
-export type ReloadScope = 'all' | 'records' | 'dns-servers'
+export type ReloadScope = 'all' | 'records' | 'dns-servers' | 'rewrite-rules'
 
 export interface FlushResult {
   ok: boolean
@@ -14,6 +14,7 @@ export interface ReloadResult {
   regexRecords: number
   defaultDnsServers: number
   customDnsServers: number
+  rewriteRules?: number
 }
 
 export async function flushCache() {

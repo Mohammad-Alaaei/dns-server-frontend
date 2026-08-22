@@ -292,6 +292,10 @@ export default function MemoryPage() {
                 <Server className="h-4 w-4" />
                 {t('memory.reloadServers')}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => void runReload('rewrite-rules')}>
+                <RefreshCw className="h-4 w-4" />
+                {t('memory.reloadRewriteRules')}
+              </DropdownMenuItem>
             </DropdownMenu>
           )}
         </div>

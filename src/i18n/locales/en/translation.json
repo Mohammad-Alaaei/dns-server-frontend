@@ -12,7 +12,8 @@
     "system": "System",
     "users": "Users",
     "settings": "Settings",
-    "preferences": "Preferences"
+    "preferences": "Preferences",
+    "rewriteRules": "Rewrite Rules"
   },
   "auth": {
     "login": "Login",
@@ -246,8 +247,10 @@
     "scope": {
       "all": "all",
       "records": "records",
-      "dns-servers": "DNS servers"
-    }
+      "dns-servers": "DNS servers",
+      "rewrite-rules": "rewrite rules"
+    },
+    "reloadRewriteRules": "Reload rewrite rules"
   },
   "system": {
     "title": "System",
@@ -270,8 +273,10 @@
     "scope": {
       "all": "all",
       "records": "records",
-      "dns-servers": "DNS servers"
-    }
+      "dns-servers": "DNS servers",
+      "rewrite-rules": "rewrite rules"
+    },
+    "reloadRewriteRules": "Reload rewrite rules"
   },
   "users": {
     "title": "Users",
@@ -367,5 +372,31 @@
     "createFailedBadge": "Create failed",
     "cnameNoRecord": "Not in DNS Records",
     "cnameAutoCreatedHint": "Record was created with A: {{ips}}. No further apply needed for this host."
+  },
+  "rewriteRules": {
+    "title": "Rewrite Rules",
+    "subtitle": "Match domains with regex and apply actions (e.g. synthetic CNAME rewrite).",
+    "name": "Name",
+    "nameOptional": "Optional label",
+    "unnamed": "Unnamed rule",
+    "pattern": "Pattern",
+    "patternRequired": "Pattern is required",
+    "patternHelp": "Regular expression without anchors. The server wraps it as ^(?:pattern)$. Capture groups work with the template ($1, $2, …).",
+    "action": "Action",
+    "template": "Template",
+    "templateRequired": "Template is required for cname_rewrite",
+    "templateHelp": "Replacement string. Example: $1.$2 turns r3---sn….googlevideo.com into r3.sn….googlevideo.com.",
+    "enabled": "Enabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "createTitle": "Create rewrite rule",
+    "editTitle": "Edit rewrite rule",
+    "deleteConfirm": "Delete rewrite rule \"{{name}}\"? This cannot be undone.",
+    "actions": {
+      "cname_rewrite": "CNAME rewrite"
+    },
+    "patternInvalid": "Pattern is not a valid regular expression",
+    "previewTitle": "Live preview",
+    "previewEmpty": "No sample domains match this pattern yet. Adjust the pattern or try a more specific example."
   }
 }

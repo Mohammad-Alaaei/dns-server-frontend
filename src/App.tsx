@@ -9,6 +9,7 @@ import RecordDetailPage from '@/pages/RecordDetailPage'
 import RecordFormPage from '@/pages/RecordFormPage'
 import ServersPage from '@/pages/ServersPage'
 import ServerDetailPage from '@/pages/ServerDetailPage'
+import RewriteRulesPage from '@/pages/RewriteRulesPage'
 import LogsPage from '@/pages/LogsPage'
 import LogDetailPage from '@/pages/LogDetailPage'
 import MemoryPage from '@/pages/MemoryPage'
@@ -48,6 +49,7 @@ function AppRoutes() {
         <Route path="records/:id" element={<RecordDetailPage />} />
         <Route path="servers" element={<ServersPage />} />
         <Route path="servers/:id" element={<ServerDetailPage />} />
+        <Route path="rewrite-rules" element={<RewriteRulesPage />} />
         <Route path="logs" element={<LogsPage />} />
         <Route path="logs/:filename" element={<LogDetailPage />} />
         <Route path="memory" element={<MemoryPage />} />
