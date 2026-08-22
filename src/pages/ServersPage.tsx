@@ -28,7 +28,9 @@ import { SortableHeader, nextSortState } from '@/components/SortableHeader'
 import { CopyButton } from '@/components/CopyButton'
 import { usePersistedListState } from '@/hooks/usePersistedListState'
 import { ServerFormModal } from '@/components/servers/ServerFormModal'
-
+import { useRowSelection } from '@/hooks/useRowSelection'
+import { BulkActionBar } from '@/components/BulkActionBar'
+import { RowCheckbox } from '@/components/RowCheckbox'
 function typeBadgeVariant(type: string) {
   return type === 'DEFAULT' ? ('success' as const) : ('secondary' as const)
 }
@@ -111,6 +113,8 @@ export default function ServersPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const selection = useRowSelection()
   const [formOpen, setFormOpen] = useState(false)
   const [editServer, setEditServer] = useState<DnsServerListItem | null>(null)
   const [defaultCount, setDefaultCount] = useState(0)
@@ -174,6 +178,51 @@ export default function ServersPage() {
   function isLastDefault(row: DnsServerListItem) {
     return row.type === 'DEFAULT' && row.enabled && defaultCount <= 1
   }
+
+  async function handleBulkEnable() {
+    if (!canWrite || selection.count === 0) return
+    setBulkBusy(true)
+    setError('')
+    try {
+      for (const id of selection.selectedIds) {
+        await updateDnsServer(id, { enabled: true })
+      }
+      selection.clear()
+      await load()
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: { error?: string } } }).response?.data?.error
+      setError(typeof msg === 'string' ? msg : t('common.error'))
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  async function handleBulkDisable() {
+    if (!canWrite || selection.count === 0) return
+    setBulkBusy(true)
+    setError('')
+    try {
+      for (const id of selection.selectedIds) {
+        await updateDnsServer(id, { enabled: false })
+      }
+      selection.clear()
+      await load()
+    } catch (err: unknown) {
+      const msg =
+        err &&
+        typeof err === 'object' &&
+        'response' in err &&
+        (err as { response?: { data?: { error?: string } } }).response?.data?.error
+      setError(typeof msg === 'string' ? msg : t('common.error'))
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
 
 
   function goPrev() {
@@ -240,12 +289,36 @@ export default function ServersPage() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      {canWrite && (
+        <BulkActionBar
+          selectedRows={selection.selectedRows}
+          busy={bulkBusy}
+          showDelete={false}
+          onEnable={() => void handleBulkEnable()}
+          onDisable={() => void handleBulkDisable()}
+          onClear={selection.clear}
+        />
+      )}
+
       <Card>
         <CardContent className="p-0">
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-muted-foreground">
+                  {canWrite && (
+                    <th className="w-10 px-3 py-3">
+                      <RowCheckbox
+                        aria-label={t('bulk.selectAll')}
+                        checked={selection.pageCheckState(items.map((r) => r.id)) === 'all'}
+                        indeterminate={selection.pageCheckState(items.map((r) => r.id)) === 'some'}
+                        disabled={loading || items.length === 0 || bulkBusy}
+                        onChange={() =>
+                          selection.togglePage(items.map((r) => ({ id: r.id, label: r.ip })))
+                        }
+                      />
+                    </th>
+                  )}
                   <SortableHeader column="ip" label={t('servers.ip')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
                   <SortableHeader column="type" label={t('servers.type')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
                   <SortableHeader column="enabled" label={t('servers.enabled')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
@@ -258,13 +331,13 @@ export default function ServersPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={canWrite ? 8 : 7}>
                       <Loading fullScreen={false} />
                     </td>
                   </tr>
                 ) : items.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={canWrite ? 8 : 7}>
                       <NoResult fullScreen={false} />
                     </td>
                   </tr>
@@ -275,6 +348,20 @@ export default function ServersPage() {
                       className="group border-b last:border-0 hover:bg-muted/30 cursor-pointer"
                       onClick={() => navigate(`/servers/${row.id}`)}
                     >
+                      {canWrite && (
+                        <td
+                          className="w-10 px-3 py-3"
+                          onClick={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <RowCheckbox
+                            aria-label={t('bulk.selectRow')}
+                            checked={selection.isSelected(row.id)}
+                            disabled={bulkBusy}
+                            onChange={() => selection.toggle(row.id, row.ip)}
+                          />
+                        </td>
+                      )}
                       <td className="px-4 py-3 font-medium font-mono">
                         <div className="flex items-center gap-1 min-w-0">
                           <Link
@@ -338,6 +425,20 @@ export default function ServersPage() {
                   className="group flex items-start gap-3 px-4 py-3 cursor-pointer"
                   onClick={() => navigate(`/servers/${row.id}`)}
                 >
+                  {canWrite && (
+                    <div
+                      className="pt-1"
+                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <RowCheckbox
+                        aria-label={t('bulk.selectRow')}
+                        checked={selection.isSelected(row.id)}
+                        disabled={bulkBusy}
+                        onChange={() => selection.toggle(row.id, row.ip)}
+                      />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-1 min-w-0">
                       <p className="font-medium font-mono truncate">{row.ip}</p>

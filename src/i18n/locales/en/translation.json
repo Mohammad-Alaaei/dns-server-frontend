@@ -398,5 +398,15 @@
     "patternInvalid": "Pattern is not a valid regular expression",
     "previewTitle": "Live preview",
     "previewEmpty": "No sample domains match this pattern yet. Adjust the pattern or try a more specific example."
+  },
+  "bulk": {
+    "selected": "{{count}} selected",
+    "enable": "Enable",
+    "disable": "Disable",
+    "delete": "Delete",
+    "clear": "Clear",
+    "deleteConfirm": "Delete {{count}} selected item(s)? This cannot be undone.",
+    "selectAll": "Select all on this page",
+    "selectRow": "Select row"
   }
 }

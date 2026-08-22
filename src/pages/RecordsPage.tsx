@@ -38,6 +38,9 @@ import { CopyButton } from '@/components/CopyButton'
 import { usePersistedListState } from '@/hooks/usePersistedListState'
 import { useMxtoolboxQuota } from '@/hooks/useMxtoolboxQuota'
 import { ResolveMxtoolboxModal } from '@/components/records/ResolveMxtoolboxModal'
+import { useRowSelection } from '@/hooks/useRowSelection'
+import { BulkActionBar } from '@/components/BulkActionBar'
+import { RowCheckbox } from '@/components/RowCheckbox'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -176,6 +179,8 @@ export default function RecordsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [actionLoading, setActionLoading] = useState<number | null>(null)
+  const [bulkBusy, setBulkBusy] = useState(false)
+  const selection = useRowSelection()
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -249,6 +254,55 @@ export default function RecordsPage() {
       setActionLoading(null)
     }
   }
+
+  async function handleBulkEnable() {
+    if (!canWrite || selection.count === 0) return
+    setBulkBusy(true)
+    setError('')
+    try {
+      await setRecordsEnabled(selection.selectedIds, true)
+      selection.clear()
+      await load()
+    } catch {
+      setError(t('common.error'))
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  async function handleBulkDisable() {
+    if (!canWrite || selection.count === 0) return
+    setBulkBusy(true)
+    setError('')
+    try {
+      await setRecordsEnabled(selection.selectedIds, false)
+      selection.clear()
+      await load()
+    } catch {
+      setError(t('common.error'))
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (!canWrite || selection.count === 0) return
+    if (!window.confirm(t('bulk.deleteConfirm', { count: selection.count }))) return
+    setBulkBusy(true)
+    setError('')
+    try {
+      for (const id of selection.selectedIds) {
+        await deleteRecord(id)
+      }
+      selection.clear()
+      await load()
+    } catch {
+      setError(t('common.error'))
+    } finally {
+      setBulkBusy(false)
+    }
+  }
+
 
   const canPromoteRow = (row: RecordListItem) =>
     canWrite && (row.source === 'CACHE' || row.source === 'FILTERED')
@@ -333,6 +387,17 @@ export default function RecordsPage() {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
+      {canWrite && (
+        <BulkActionBar
+          selectedRows={selection.selectedRows}
+          busy={bulkBusy}
+          onEnable={() => void handleBulkEnable()}
+          onDisable={() => void handleBulkDisable()}
+          onDelete={() => void handleBulkDelete()}
+          onClear={selection.clear}
+        />
+      )}
+
       <Card>
         <CardContent className="p-0">
           {/* Desktop table */}
@@ -340,6 +405,19 @@ export default function RecordsPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-muted/50 text-muted-foreground">
+                  {canWrite && (
+                    <th className="w-10 px-3 py-3">
+                      <RowCheckbox
+                        aria-label={t('bulk.selectAll')}
+                        checked={selection.pageCheckState(items.map((r) => r.id)) === 'all'}
+                        indeterminate={selection.pageCheckState(items.map((r) => r.id)) === 'some'}
+                        disabled={loading || items.length === 0 || bulkBusy}
+                        onChange={() =>
+                          selection.togglePage(items.map((r) => ({ id: r.id, label: r.domain })))
+                        }
+                      />
+                    </th>
+                  )}
                   <SortableHeader column="domain" label={t('records.domain')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
                   <SortableHeader column="source" label={t('records.source')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
                   <SortableHeader column="enabled" label={t('records.enabled')} sortBy={sortState.sortBy} sortDir={sortState.sortDir} onSort={(c) => setSortState((s) => nextSortState(s, c))} />
@@ -352,13 +430,13 @@ export default function RecordsPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={canWrite ? 8 : 7}>
                       <Loading fullScreen={false} />
                     </td>
                   </tr>
                 ) : items.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>
+                    <td colSpan={canWrite ? 8 : 7}>
                       <NoResult fullScreen={false} />
                     </td>
                   </tr>
@@ -369,6 +447,20 @@ export default function RecordsPage() {
                       className="group border-b last:border-0 hover:bg-muted/30 cursor-pointer"
                       onClick={() => navigate(`/records/${row.id}`)}
                     >
+                      {canWrite && (
+                        <td
+                          className="w-10 px-3 py-3"
+                          onClick={(e) => e.stopPropagation()}
+                          onPointerDown={(e) => e.stopPropagation()}
+                        >
+                          <RowCheckbox
+                            aria-label={t('bulk.selectRow')}
+                            checked={selection.isSelected(row.id)}
+                            disabled={bulkBusy}
+                            onChange={() => selection.toggle(row.id, row.domain)}
+                          />
+                        </td>
+                      )}
                       <td className="px-4 py-3 font-medium">
                         <div className="flex items-center gap-1 min-w-0">
                           <Link
@@ -437,6 +529,20 @@ export default function RecordsPage() {
                   className="group flex items-start gap-3 px-4 py-3 cursor-pointer"
                   onClick={() => navigate(`/records/${row.id}`)}
                 >
+                  {canWrite && (
+                    <div
+                      className="pt-1"
+                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
+                      <RowCheckbox
+                        aria-label={t('bulk.selectRow')}
+                        checked={selection.isSelected(row.id)}
+                        disabled={bulkBusy}
+                        onChange={() => selection.toggle(row.id, row.domain)}
+                      />
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0 space-y-1">
                     <div className="flex items-center gap-1 min-w-0">
                       <p className="font-medium truncate">{row.domain}</p>
