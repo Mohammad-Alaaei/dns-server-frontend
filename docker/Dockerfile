@@ -35,4 +35,5 @@ ENV HTTPS_ENABLED=true \
 
 EXPOSE 80 443
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/entrypoint.sh"]
+CMD []
