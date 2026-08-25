@@ -3,8 +3,8 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package.json package-lock.json* ./
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 COPY . .
 
@@ -18,12 +18,21 @@ RUN npm run build
 # ---------- production stage ----------
 FROM nginx:1.27-alpine
 
-# Remove default config
-RUN rm /etc/nginx/conf.d/default.conf
+RUN apk add --no-cache openssl \
+    && rm -f /etc/nginx/conf.d/default.conf \
+    && mkdir -p /etc/nginx/certs
 
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+# Static fallback config (entrypoint replaces at runtime)
 COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-EXPOSE 80
+ENV HTTPS_ENABLED=true \
+    SSL_MODE=selfsigned \
+    SSL_CERT_HOSTS=localhost,127.0.0.1
 
-CMD ["nginx", "-g", "daemon off;"]
+EXPOSE 80 443
+
+ENTRYPOINT ["/entrypoint.sh"]
