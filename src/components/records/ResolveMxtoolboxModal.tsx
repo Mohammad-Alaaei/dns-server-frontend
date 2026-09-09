@@ -34,13 +34,22 @@ type ValuesByType = { a: string[]; aaaa: string[]; cnames: string[] }
 
 type CnameTargetState = {
   domain: string
+  /** Depth in the CNAME chain (1 = direct child of parent) */
+  depth: number
   /** Existing record id, or id after auto-create; null if missing and no A to create */
   recordId: number | null
   autoCreated: boolean
   createFailed?: string
   current: ValuesByType
   resolvedA: string[]
+  /** Further CNAME targets found at this hop (when we stopped before following them) */
+  furtherCnames: string[]
+  /** Why this hop did not produce terminal A records */
+  stopReason?: 'quota' | 'limit_error' | 'max_depth' | 'cycle' | 'no_a' | 'error'
 }
+
+/** Max CNAME hops to follow (DNS resolvers typically stop around 8–10). */
+const MAX_CNAME_DEPTH = 8
 
 function valueList(v: unknown): string[] {
   if (v == null) return []
@@ -69,8 +78,35 @@ function currentByType(values: RecordValueItem[]): ValuesByType {
   }
 }
 
+function normalizeHost(host: string): string {
+  return host.replace(/\.$/, '').toLowerCase().trim()
+}
+
+/**
+ * MXToolbox quota / rate-limit errors are unreliable from the Usage endpoint
+ * (remaining can stay at a fixed value like 64 while the real budget is exhausted).
+ * Detect limit-style failures from error messages so we can stop following CNAMEs.
+ */
+function isMxLimitError(message: string): boolean {
+  const m = message.toLowerCase()
+  return (
+    m.includes('limit') ||
+    m.includes('quota') ||
+    m.includes('rate') ||
+    m.includes('exceed') ||
+    m.includes('too many') ||
+    m.includes('throttle') ||
+    m.includes('429') ||
+    m.includes('daily') ||
+    m.includes('maximum') ||
+    m.includes('allowed') ||
+    m.includes('credits') ||
+    m.includes('usage')
+  )
+}
+
 async function findRecordByDomain(domain: string): Promise<{ id: number } | null> {
-  const host = domain.replace(/\.$/, '').toLowerCase()
+  const host = normalizeHost(domain)
   try {
     const data = await listRecords({
       page: 1,
@@ -78,7 +114,7 @@ async function findRecordByDomain(domain: string): Promise<{ id: number } | null
       search: host,
       searchField: 'domain',
     })
-    const exact = data.items.find((r) => r.domain.replace(/\.$/, '').toLowerCase() === host)
+    const exact = data.items.find((r) => normalizeHost(r.domain) === host)
     return exact ? { id: exact.id } : null
   } catch {
     return null
@@ -110,6 +146,7 @@ export function ResolveMxtoolboxModal({
   const [resolved, setResolved] = useState<ValuesByType>({ a: [], aaaa: [], cnames: [] })
   const [cnameTargets, setCnameTargets] = useState<CnameTargetState[]>([])
   const [logs, setLogs] = useState<string[]>([])
+  const [hitApiLimit, setHitApiLimit] = useState(false)
 
   const [selA, setSelA] = useState<Set<string>>(new Set())
   const [selAaaa, setSelAaaa] = useState<Set<string>>(new Set())
@@ -134,6 +171,7 @@ export function ResolveMxtoolboxModal({
     setResolved({ a: [], aaaa: [], cnames: [] })
     setCnameTargets([])
     setLogs([])
+    setHitApiLimit(false)
     setSelA(new Set())
     setSelAaaa(new Set())
     setSelCname(new Set())
@@ -174,6 +212,7 @@ export function ResolveMxtoolboxModal({
 
   async function runResolve() {
     setError('')
+    setHitApiLimit(false)
     if (!apiKey.trim()) {
       setError(t('resolve.noApiKey'))
       return
@@ -182,7 +221,9 @@ export function ResolveMxtoolboxModal({
       setError(t('resolve.selectType'))
       return
     }
-    if (minCost > remaining) {
+    // Soft check only — Usage remaining can be wrong (fixed 64, etc.).
+    // Hard stop happens on actual limit errors / local used count.
+    if (remaining <= 0) {
       setError(t('resolve.notEnoughQuota', { need: minCost, left: remaining }))
       return
     }
@@ -190,11 +231,23 @@ export function ResolveMxtoolboxModal({
     setRunning(true)
     const log: string[] = []
     let used = 0
+    let apiLimitHit = false
     const acc: ValuesByType = { a: [], aaaa: [], cnames: [] }
     const targets: CnameTargetState[] = []
     const selMap: Record<string, Set<string>> = {}
 
+    /**
+     * Perform one MXToolbox lookup. Returns:
+     * - response on success
+     * - null on soft failure (network / parse)
+     * - sets apiLimitHit when the API signals quota/rate limit (even if remaining looked fine)
+     */
     async function one(cmd: 'a' | 'aaaa', host: string): Promise<MxLookupResponse | null> {
+      if (apiLimitHit) {
+        log.push(t('resolve.stoppedApiLimit'))
+        return null
+      }
+      // Local budget: trust remaining only as a soft upper bound
       if (remaining - used < 1) {
         log.push(t('resolve.stoppedQuota'))
         return null
@@ -204,16 +257,137 @@ export function ResolveMxtoolboxModal({
         used += 1
         consumeMxLookups(1)
         onQuotaConsumed()
+        // Some error payloads still return 200 with IsError / Failed
+        if (res.IsError || (Array.isArray(res.Failed) && res.Failed.length > 0)) {
+          const failInfo = (res.Failed ?? [])
+            .map((f) => f.Info || f.Name || '')
+            .filter(Boolean)
+            .join('; ')
+          const combined = failInfo || 'lookup failed'
+          if (isMxLimitError(combined)) {
+            apiLimitHit = true
+            log.push(`${cmd.toUpperCase()} ${host}: ${t('resolve.apiLimitError')} (${combined})`)
+            return null
+          }
+          log.push(`${cmd.toUpperCase()} ${host}: ${combined}`)
+          return null
+        }
         log.push(`${cmd.toUpperCase()} ${host}: ok`)
         return res
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err)
+        if (isMxLimitError(msg)) {
+          apiLimitHit = true
+          log.push(`${cmd.toUpperCase()} ${host}: ${t('resolve.apiLimitError')} (${msg})`)
+          return null
+        }
         log.push(`${cmd.toUpperCase()} ${host}: ${msg}`)
         return null
       }
     }
 
+    /** Process a CNAME hop: find/create record, push target state. */
+    async function settleCnameHop(
+      cn: string,
+      depth: number,
+      resolvedA: string[],
+      furtherCnames: string[],
+      stopReason?: CnameTargetState['stopReason']
+    ) {
+      const existing = await findRecordByDomain(cn)
+      if (existing) {
+        let currentVals: ValuesByType = { a: [], aaaa: [], cnames: [] }
+        try {
+          const detail = await getRecord(existing.id)
+          currentVals = currentByType(detail.record.values ?? [])
+        } catch {
+          /* ignore */
+        }
+        targets.push({
+          domain: cn,
+          depth,
+          recordId: existing.id,
+          autoCreated: false,
+          current: currentVals,
+          resolvedA,
+          furtherCnames,
+          stopReason,
+        })
+        if (resolvedA.length) selMap[cn] = new Set(resolvedA)
+        log.push(t('resolve.cnameFoundExisting', { domain: cn }))
+      } else if (resolvedA.length) {
+        try {
+          const created = await createRecord({
+            domain: cn,
+            enabled: true,
+            values: [{ type: 'A', value: resolvedA }],
+          })
+          targets.push({
+            domain: cn,
+            depth,
+            recordId: created.id,
+            autoCreated: true,
+            current: { a: [], aaaa: [], cnames: [] },
+            resolvedA,
+            furtherCnames,
+            stopReason,
+          })
+          selMap[cn] = new Set() // already applied via create
+          log.push(t('resolve.cnameAutoCreated', { domain: cn, ips: resolvedA.join(', ') }))
+        } catch (err: unknown) {
+          const msg =
+            err &&
+            typeof err === 'object' &&
+            'response' in err &&
+            (err as { response?: { data?: { error?: string } } }).response?.data?.error
+          const errText = typeof msg === 'string' ? msg : t('common.error')
+          targets.push({
+            domain: cn,
+            depth,
+            recordId: null,
+            autoCreated: false,
+            createFailed: errText,
+            current: { a: [], aaaa: [], cnames: [] },
+            resolvedA,
+            furtherCnames,
+            stopReason,
+          })
+          log.push(t('resolve.cnameCreateFailed', { domain: cn, error: errText }))
+        }
+      } else {
+        targets.push({
+          domain: cn,
+          depth,
+          recordId: null,
+          autoCreated: false,
+          current: { a: [], aaaa: [], cnames: [] },
+          resolvedA: [],
+          furtherCnames,
+          stopReason: stopReason ?? 'no_a',
+        })
+        if (stopReason === 'quota') {
+          log.push(t('resolve.cnameStoppedQuota', { domain: cn }))
+        } else if (stopReason === 'limit_error') {
+          log.push(t('resolve.cnameStoppedApiLimit', { domain: cn }))
+        } else if (stopReason === 'max_depth') {
+          log.push(t('resolve.cnameMaxDepth', { domain: cn, depth }))
+        } else if (stopReason === 'cycle') {
+          log.push(t('resolve.cnameCycle', { domain: cn }))
+        } else if (furtherCnames.length) {
+          log.push(
+            t('resolve.cnameFurtherOnly', {
+              domain: cn,
+              next: furtherCnames.join(', '),
+            })
+          )
+        } else {
+          log.push(t('resolve.cnameNoA', { domain: cn }))
+        }
+      }
+    }
+
     try {
+      // --- Parent domain lookups ---
       if (wantA) {
         const res = await one('a', domain)
         if (res) {
@@ -222,7 +396,7 @@ export function ResolveMxtoolboxModal({
           for (const x of p.cnames) if (!acc.cnames.includes(x)) acc.cnames.push(x)
         }
       }
-      if (wantAaaa) {
+      if (wantAaaa && !apiLimitHit) {
         const res = await one('aaaa', domain)
         if (res) {
           const p = parseMxInformation(res.Information)
@@ -231,75 +405,85 @@ export function ResolveMxtoolboxModal({
         }
       }
 
-      if (followCname && acc.cnames.length) {
-        for (const cn of acc.cnames) {
-          if (remaining - used < 1) {
-            log.push(t('resolve.stoppedQuota'))
+      // --- Recursive CNAME follow (BFS) ---
+      if (followCname && acc.cnames.length && !apiLimitHit) {
+        type QueueItem = { host: string; depth: number }
+        const queue: QueueItem[] = acc.cnames.map((h) => ({ host: h, depth: 1 }))
+        const visited = new Set<string>([normalizeHost(domain)])
+        for (const h of acc.cnames) visited.add(normalizeHost(h))
+
+        while (queue.length > 0) {
+          if (apiLimitHit) {
+            log.push(t('resolve.stoppedApiLimit'))
             break
           }
-          const res = await one('a', cn)
-          const resolvedA = res ? parseMxInformation(res.Information).a : []
-
-          const existing = await findRecordByDomain(cn)
-          if (existing) {
-            let currentVals: ValuesByType = { a: [], aaaa: [], cnames: [] }
-            try {
-              const detail = await getRecord(existing.id)
-              currentVals = currentByType(detail.record.values ?? [])
-            } catch {
-              /* ignore */
+          if (remaining - used < 1) {
+            log.push(t('resolve.stoppedQuota'))
+            while (queue.length > 0) {
+              const left = queue.shift()!
+              await settleCnameHop(left.host, left.depth, [], [], 'quota')
             }
-            targets.push({
-              domain: cn,
-              recordId: existing.id,
-              autoCreated: false,
-              current: currentVals,
-              resolvedA,
-            })
-            selMap[cn] = new Set(resolvedA)
-            log.push(t('resolve.cnameFoundExisting', { domain: cn }))
-          } else if (resolvedA.length) {
-            try {
-              const created = await createRecord({
-                domain: cn,
-                enabled: true,
-                values: [{ type: 'A', value: resolvedA }],
-              })
-              targets.push({
-                domain: cn,
-                recordId: created.id,
-                autoCreated: true,
-                current: { a: [], aaaa: [], cnames: [] },
-                resolvedA,
-              })
-              selMap[cn] = new Set() // already applied via create
-              log.push(t('resolve.cnameAutoCreated', { domain: cn, ips: resolvedA.join(', ') }))
-            } catch (err: unknown) {
-              const msg =
-                err &&
-                typeof err === 'object' &&
-                'response' in err &&
-                (err as { response?: { data?: { error?: string } } }).response?.data?.error
-              const errText = typeof msg === 'string' ? msg : t('common.error')
-              targets.push({
-                domain: cn,
-                recordId: null,
-                autoCreated: false,
-                createFailed: errText,
-                current: { a: [], aaaa: [], cnames: [] },
-                resolvedA,
-              })
-              log.push(t('resolve.cnameCreateFailed', { domain: cn, error: errText }))
+            break
+          }
+
+          const { host: cn, depth } = queue.shift()!
+
+          if (depth > MAX_CNAME_DEPTH) {
+            await settleCnameHop(cn, depth, [], [], 'max_depth')
+            continue
+          }
+
+          const res = await one('a', cn)
+          if (apiLimitHit) {
+            await settleCnameHop(cn, depth, [], [], 'limit_error')
+            while (queue.length > 0) {
+              const left = queue.shift()!
+              await settleCnameHop(left.host, left.depth, [], [], 'limit_error')
+            }
+            break
+          }
+
+          if (!res) {
+            await settleCnameHop(cn, depth, [], [], 'error')
+            continue
+          }
+
+          const p = parseMxInformation(res.Information)
+          const hopA = p.a
+          const hopCnames = p.cnames
+            .map(normalizeHost)
+            .filter((c) => c && c !== normalizeHost(cn))
+
+          if (hopA.length > 0) {
+            // Terminal: found A records
+            await settleCnameHop(cn, depth, hopA, hopCnames)
+            for (const next of hopCnames) {
+              const key = normalizeHost(next)
+              if (visited.has(key)) continue
+              if (depth >= MAX_CNAME_DEPTH) continue
+              visited.add(key)
+              queue.push({ host: next, depth: depth + 1 })
+            }
+          } else if (hopCnames.length > 0) {
+            // Pure CNAME hop — follow further if budget allows
+            const nextDepth = depth + 1
+            if (nextDepth > MAX_CNAME_DEPTH) {
+              await settleCnameHop(cn, depth, [], hopCnames, 'max_depth')
+              continue
+            }
+
+            await settleCnameHop(cn, depth, [], hopCnames)
+            for (const next of hopCnames) {
+              const key = normalizeHost(next)
+              if (visited.has(key)) {
+                log.push(t('resolve.cnameCycle', { domain: next }))
+                continue
+              }
+              visited.add(key)
+              queue.push({ host: next, depth: nextDepth })
             }
           } else {
-            targets.push({
-              domain: cn,
-              recordId: null,
-              autoCreated: false,
-              current: { a: [], aaaa: [], cnames: [] },
-              resolvedA: [],
-            })
-            log.push(t('resolve.cnameNoA', { domain: cn }))
+            await settleCnameHop(cn, depth, [], [], 'no_a')
           }
         }
       }
@@ -311,6 +495,7 @@ export function ResolveMxtoolboxModal({
       setSelCname(new Set(acc.cnames))
       setSelCnameA(selMap)
       setLogs(log)
+      setHitApiLimit(apiLimitHit)
       setPhase('results')
     } finally {
       setRunning(false)
@@ -463,6 +648,12 @@ export function ResolveMxtoolboxModal({
 
           {phase === 'results' && (
             <div className="space-y-4">
+              {hitApiLimit && (
+                <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+                  {t('resolve.apiLimitBanner')}
+                </div>
+              )}
+
               <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                 {domain}
               </p>
@@ -489,9 +680,12 @@ export function ResolveMxtoolboxModal({
               />
 
               {cnameTargets.map((target) => (
-                <div key={target.domain} className="space-y-2 rounded-lg border p-3">
+                <div key={`${target.depth}-${target.domain}`} className="space-y-2 rounded-lg border p-3">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-sm font-medium font-mono break-all">{target.domain}</p>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground tabular-nums">
+                      {t('resolve.depthBadge', { depth: target.depth })}
+                    </span>
                     {target.autoCreated && (
                       <span className="rounded bg-emerald-600/15 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
                         {t('resolve.autoCreatedBadge')}
@@ -507,6 +701,21 @@ export function ResolveMxtoolboxModal({
                         {t('resolve.cnameNoRecord')}
                       </span>
                     )}
+                    {target.stopReason === 'limit_error' && (
+                      <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                        {t('resolve.limitBadge')}
+                      </span>
+                    )}
+                    {target.stopReason === 'max_depth' && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        {t('resolve.maxDepthBadge')}
+                      </span>
+                    )}
+                    {target.stopReason === 'cycle' && (
+                      <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        {t('resolve.cycleBadge')}
+                      </span>
+                    )}
                   </div>
                   {target.autoCreated ? (
                     <p className="text-xs text-muted-foreground">
@@ -514,7 +723,7 @@ export function ResolveMxtoolboxModal({
                         ips: target.resolvedA.join(', ') || '—',
                       })}
                     </p>
-                  ) : target.recordId != null ? (
+                  ) : target.recordId != null && target.resolvedA.length > 0 ? (
                     <CompareBlock
                       title="A"
                       current={target.current.a}
@@ -524,6 +733,10 @@ export function ResolveMxtoolboxModal({
                     />
                   ) : target.resolvedA.length > 0 ? (
                     <p className="text-xs font-mono">{target.resolvedA.join(', ')}</p>
+                  ) : target.furtherCnames.length > 0 ? (
+                    <p className="text-xs text-muted-foreground font-mono">
+                      → {target.furtherCnames.join(', ')}
+                    </p>
                   ) : null}
                   {target.createFailed && (
                     <p className="text-xs text-destructive">{target.createFailed}</p>
