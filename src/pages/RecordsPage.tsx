@@ -36,8 +36,9 @@ import { ListToolbar } from '@/components/ListToolbar'
 import { SortableHeader, nextSortState } from '@/components/SortableHeader'
 import { CopyButton } from '@/components/CopyButton'
 import { usePersistedListState } from '@/hooks/usePersistedListState'
-import { useMxtoolboxQuota } from '@/hooks/useMxtoolboxQuota'
-import { ResolveMxtoolboxModal } from '@/components/records/ResolveMxtoolboxModal'
+import { useExternalResolvers } from '@/hooks/useExternalResolvers'
+import { formatRemaining } from '@/api/external-resolvers'
+import { ResolveExternalModal } from '@/components/records/ResolveExternalModal'
 import { useRowSelection } from '@/hooks/useRowSelection'
 import { BulkActionBar } from '@/components/BulkActionBar'
 import { RowCheckbox } from '@/components/RowCheckbox'
@@ -61,28 +62,28 @@ function RowActions({
   canPromote,
   canDemote,
   actionLoading,
-  resolveRemaining,
-  resolveDisabled,
+  resolvers,
+  resolversLoading,
   onToggle,
   onPromote,
   onDemote,
   onEdit,
   onDelete,
-  onResolveMx,
+  onResolve,
 }: {
   row: RecordListItem
   canWrite: boolean
   canPromote: boolean
   canDemote: boolean
   actionLoading: boolean
-  resolveRemaining: number
-  resolveDisabled: boolean
+  resolvers: Array<{ id: number; name: string; remaining: number }>
+  resolversLoading: boolean
   onToggle: () => void
   onPromote: () => void
   onDemote: () => void
   onEdit: () => void
   onDelete: () => void
-  onResolveMx: () => void
+  onResolve: (resolverId: number) => void
 }) {
   const { t } = useTranslation()
   return (
@@ -133,15 +134,24 @@ function RowActions({
           {t('common.edit')}
         </DropdownMenuItem>
       )}
-      {canWrite && (
+      {canWrite && resolvers.length > 0 && (
         <DropdownMenuSub label={t('resolve.menu')} icon={<Globe2 className="h-4 w-4" />}>
-          <DropdownMenuItem onClick={onResolveMx} disabled={resolveDisabled}>
-            <Globe2 className="h-4 w-4" />
-            {t('resolve.mxtoolbox')}
-            <span className="ms-auto text-[10px] tabular-nums text-muted-foreground">
-              {resolveRemaining}
-            </span>
-          </DropdownMenuItem>
+          {resolvers.map((r) => {
+            const noQuota = Number.isFinite(r.remaining) && r.remaining < 1
+            return (
+              <DropdownMenuItem
+                key={r.id}
+                onClick={() => onResolve(r.id)}
+                disabled={resolversLoading || noQuota}
+              >
+                <Globe2 className="h-4 w-4" />
+                {r.name}
+                <span className="ms-auto text-[10px] tabular-nums text-muted-foreground">
+                  {formatRemaining(r.remaining)}
+                </span>
+              </DropdownMenuItem>
+            )
+          })}
         </DropdownMenuSub>
       )}
       {canWrite && (
@@ -159,8 +169,11 @@ export default function RecordsPage() {
   const { hasRole } = useAuth()
   const navigate = useNavigate()
   const canWrite = hasRole('superadmin', 'admin')
-  const mxQuota = useMxtoolboxQuota(canWrite)
-  const [resolveTarget, setResolveTarget] = useState<RecordListItem | null>(null)
+  const externalResolvers = useExternalResolvers(canWrite)
+  const [resolveTarget, setResolveTarget] = useState<{
+    record: RecordListItem
+    resolverId: number
+  } | null>(null)
 
   const [items, setItems] = useState<RecordListItem[]>([])
   const [pagination, setPagination] = useState<PaginationMeta | null>(null)
@@ -504,9 +517,9 @@ export default function RecordsPage() {
                           onDemote={() => handleDemote(row)}
                           onEdit={() => navigate(`/records/${row.id}/edit`)}
                           onDelete={() => handleDelete(row)}
-                          resolveRemaining={mxQuota.remaining}
-                          resolveDisabled={!mxQuota.hasKey || mxQuota.remaining < 1 || mxQuota.loading}
-                          onResolveMx={() => setResolveTarget(row)}
+                          resolvers={externalResolvers.items}
+                          resolversLoading={externalResolvers.loading}
+                          onResolve={(resolverId) => setResolveTarget({ record: row, resolverId })}
                         />
                       </td>
                     </tr>
@@ -573,9 +586,9 @@ export default function RecordsPage() {
                       onDemote={() => handleDemote(row)}
                       onEdit={() => navigate(`/records/${row.id}/edit`)}
                       onDelete={() => handleDelete(row)}
-                      resolveRemaining={mxQuota.remaining}
-                      resolveDisabled={!mxQuota.hasKey || mxQuota.remaining < 1 || mxQuota.loading}
-                      onResolveMx={() => setResolveTarget(row)}
+                      resolvers={externalResolvers.items}
+                      resolversLoading={externalResolvers.loading}
+                      onResolve={(resolverId) => setResolveTarget({ record: row, resolverId })}
                     />
                   </div>
                 </div>
@@ -594,15 +607,29 @@ export default function RecordsPage() {
           onNext={goNext}
         />
       )}
-      <ResolveMxtoolboxModal
+      <ResolveExternalModal
         open={resolveTarget != null}
-        domain={resolveTarget?.domain ?? ''}
-        recordId={resolveTarget?.id ?? 0}
-        apiKey={mxQuota.apiKey}
-        remaining={mxQuota.remaining}
-        onClose={() => setResolveTarget(null)}
-        onApplied={() => void load()}
-        onQuotaConsumed={() => { /* hook cache already updated */ }}
+        domain={resolveTarget?.record.domain ?? ''}
+        recordId={resolveTarget?.record.id ?? 0}
+        resolverId={resolveTarget?.resolverId ?? 0}
+        resolverName={
+          externalResolvers.items.find((r) => r.id === resolveTarget?.resolverId)?.name ?? ''
+        }
+        remaining={
+          externalResolvers.items.find((r) => r.id === resolveTarget?.resolverId)?.remaining ?? 0
+        }
+        onClose={() => {
+          const id = resolveTarget?.resolverId
+          setResolveTarget(null)
+          if (id) void externalResolvers.refreshOne(id)
+        }}
+        onApplied={() => {
+          void load()
+          if (resolveTarget) void externalResolvers.refreshOne(resolveTarget.resolverId)
+        }}
+        onQuotaConsumed={(n) => {
+          if (resolveTarget) externalResolvers.consume(resolveTarget.resolverId, n ?? 1)
+        }}
       />
 
     </div>

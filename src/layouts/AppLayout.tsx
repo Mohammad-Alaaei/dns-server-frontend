@@ -16,6 +16,7 @@ import {
   Sun,
   ChevronDown,
   Replace,
+  Globe2,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/records', icon: Database, labelKey: 'nav.records', roles: ['superadmin', 'admin', 'viewer'] },
   { to: '/servers', icon: Server, labelKey: 'nav.servers', roles: ['superadmin', 'admin', 'viewer'] },
   { to: '/rewrite-rules', icon: Replace, labelKey: 'nav.rewriteRules', roles: ['superadmin', 'admin', 'viewer'] },
+  { to: '/external-resolvers', icon: Globe2, labelKey: 'nav.externalResolvers', roles: ['superadmin', 'admin', 'viewer'] },
   { to: '/logs', icon: ScrollText, labelKey: 'nav.logs', roles: ['superadmin'] },
   { to: '/memory', icon: MemoryStick, labelKey: 'nav.memory', roles: ['superadmin', 'admin'] },
   { to: '/users', icon: Users, labelKey: 'nav.users', roles: ['superadmin'] },

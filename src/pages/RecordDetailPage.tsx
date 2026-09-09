@@ -35,8 +35,9 @@ import { cn } from '@/lib/utils'
 import { Loading } from '@/components/Loading'
 import { CopyButton } from '@/components/CopyButton'
 import { CreateMissingCnameModal } from '@/components/records/CreateMissingCnameModal'
-import { ResolveMxtoolboxModal } from '@/components/records/ResolveMxtoolboxModal'
-import { useMxtoolboxQuota } from '@/hooks/useMxtoolboxQuota'
+import { ResolveExternalModal } from '@/components/records/ResolveExternalModal'
+import { useExternalResolvers } from '@/hooks/useExternalResolvers'
+import { formatRemaining } from '@/api/external-resolvers'
 
 function sourceBadgeVariant(source: string) {
   switch (source) {
@@ -121,8 +122,8 @@ export default function RecordDetailPage() {
       : ''
   const { hasRole } = useAuth()
   const canWrite = hasRole('superadmin', 'admin')
-  const mxQuota = useMxtoolboxQuota(canWrite)
-  const [resolveOpen, setResolveOpen] = useState(false)
+  const externalResolvers = useExternalResolvers(canWrite)
+  const [resolveResolverId, setResolveResolverId] = useState<number | null>(null)
 
   const [data, setData] = useState<RecordDetailResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -340,18 +341,24 @@ export default function RecordDetailPage() {
                 {t('common.edit')}
               </DropdownMenuItem>
             )}
-            {canWrite && (
+            {canWrite && externalResolvers.items.length > 0 && (
               <DropdownMenuSub label={t('resolve.menu')} icon={<Globe2 className="h-4 w-4" />}>
-                <DropdownMenuItem
-                  onClick={() => setResolveOpen(true)}
-                  disabled={!mxQuota.hasKey || mxQuota.remaining < 1 || mxQuota.loading}
-                >
-                  <Globe2 className="h-4 w-4" />
-                  {t('resolve.mxtoolbox')}
-                  <span className="ms-auto text-[10px] tabular-nums text-muted-foreground">
-                    {mxQuota.remaining}
-                  </span>
-                </DropdownMenuItem>
+                {externalResolvers.items.map((r) => {
+                  const noQuota = Number.isFinite(r.remaining) && r.remaining < 1
+                  return (
+                    <DropdownMenuItem
+                      key={r.id}
+                      onClick={() => setResolveResolverId(r.id)}
+                      disabled={externalResolvers.loading || noQuota}
+                    >
+                      <Globe2 className="h-4 w-4" />
+                      {r.name}
+                      <span className="ms-auto text-[10px] tabular-nums text-muted-foreground">
+                        {formatRemaining(r.remaining)}
+                      </span>
+                    </DropdownMenuItem>
+                  )
+                })}
               </DropdownMenuSub>
             )}
             {canDemote && (
@@ -619,15 +626,29 @@ export default function RecordDetailPage() {
         onClose={() => setMissingCnameDomain(null)}
         onCreated={() => void load()}
       />
-      <ResolveMxtoolboxModal
-        open={resolveOpen}
+      <ResolveExternalModal
+        open={resolveResolverId != null}
         domain={record.domain}
         recordId={record.id}
-        apiKey={mxQuota.apiKey}
-        remaining={mxQuota.remaining}
-        onClose={() => setResolveOpen(false)}
-        onApplied={() => void load()}
-        onQuotaConsumed={() => {}}
+        resolverId={resolveResolverId ?? 0}
+        resolverName={
+          externalResolvers.items.find((r) => r.id === resolveResolverId)?.name ?? ''
+        }
+        remaining={
+          externalResolvers.items.find((r) => r.id === resolveResolverId)?.remaining ?? 0
+        }
+        onClose={() => {
+          const id = resolveResolverId
+          setResolveResolverId(null)
+          if (id != null) void externalResolvers.refreshOne(id)
+        }}
+        onApplied={() => {
+          void load()
+          if (resolveResolverId != null) void externalResolvers.refreshOne(resolveResolverId)
+        }}
+        onQuotaConsumed={(n) => {
+          if (resolveResolverId != null) externalResolvers.consume(resolveResolverId, n ?? 1)
+        }}
       />
 
     </div>

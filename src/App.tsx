@@ -16,6 +16,8 @@ import MemoryPage from '@/pages/MemoryPage'
 import UsersPage from '@/pages/UsersPage'
 import SettingsPage from '@/pages/SettingsPage'
 import SystemSettingsPage from '@/pages/SystemSettingsPage'
+import ExternalResolversPage from '@/pages/ExternalResolversPage'
+import ExternalResolverDetailPage from '@/pages/ExternalResolverDetailPage'
 import { type ReactNode } from 'react'
 import { Loading } from './components/Loading'
 
@@ -50,6 +52,8 @@ function AppRoutes() {
         <Route path="servers" element={<ServersPage />} />
         <Route path="servers/:id" element={<ServerDetailPage />} />
         <Route path="rewrite-rules" element={<RewriteRulesPage />} />
+        <Route path="external-resolvers" element={<ExternalResolversPage />} />
+        <Route path="external-resolvers/:id" element={<ExternalResolverDetailPage />} />
         <Route path="logs" element={<LogsPage />} />
         <Route path="logs/:filename" element={<LogDetailPage />} />
         <Route path="memory" element={<MemoryPage />} />

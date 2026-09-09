@@ -13,7 +13,8 @@
     "users": "Users",
     "settings": "Settings",
     "preferences": "Preferences",
-    "rewriteRules": "Rewrite Rules"
+    "rewriteRules": "Rewrite Rules",
+    "externalResolvers": "External Resolvers"
   },
   "auth": {
     "login": "Login",
@@ -336,13 +337,10 @@
     "ptrHostname": "PTR hostname",
     "ptrHostnameHelp": "Hostname used for PTR-style responses.",
     "debugPrefix": "Debug prefix",
-    "debugPrefixHelp": "Domain prefix that enables debug mode (e.g. _.).",
-    "resolversSection": "External resolvers",
-    "mxtoolboxApiKey": "MXToolbox API key",
-    "mxtoolboxApiKeyHelp": "Used as the Authorization header for MXToolbox DNS lookups. Superadmin only to edit."
+    "debugPrefixHelp": "Domain prefix that enables debug mode (e.g. _.)."
   },
   "resolve": {
-    "title": "Resolve with MXToolbox",
+    "title": "Resolve with {{name}}",
     "remaining": "{{n}} DNS requests left",
     "costNone": "Select at least one lookup type.",
     "costExact": "This run costs {{n}} point(s).",
@@ -355,18 +353,17 @@
     "apply": "Apply selected",
     "current": "Current",
     "resolved": "Resolved (select to apply)",
-    "noApiKey": "MXToolbox API key is not configured. Add it under System settings.",
+    "noApiKey": "No external resolver configured. Add one under External Resolvers.",
     "selectType": "Select A and/or AAAA.",
     "notEnoughQuota": "Not enough quota (need {{need}}, left {{left}}).",
     "stoppedQuota": "Stopped: no remaining DNS requests.",
     "stoppedApiLimit": "Stopped: MXToolbox API limit reached (counter may be inaccurate).",
     "apiLimitError": "API limit / quota error",
-    "apiLimitBanner": "MXToolbox returned a limit error. The remaining counter can be wrong (e.g. stuck at 64). Further lookups were stopped; results below are partial.",
+    "apiLimitBanner": "Provider returned a limit error. Further lookups were stopped; results below are partial.",
     "discardWarning": "You have unresolved results. Closing discards them; running again will cost points. Continue?",
     "cnameFollowTitle": "CNAME targets",
     "cnameFollowHint": "These belong to the CNAME target host, not this domain. Apply CNAME on this domain if you want the alias; manage target host records separately.",
     "menu": "Resolve by",
-    "mxtoolbox": "MXToolbox",
     "cnameFoundExisting": "CNAME target {{domain}} exists — compare values below.",
     "cnameAutoCreated": "Created record {{domain}} with A {{ips}}.",
     "cnameCreateFailed": "Could not create {{domain}}: {{error}}",
@@ -383,7 +380,8 @@
     "autoCreatedBadge": "Auto-created",
     "createFailedBadge": "Create failed",
     "cnameNoRecord": "Not in DNS Records",
-    "cnameAutoCreatedHint": "Record was created with A: {{ips}}. No further apply needed for this host."
+    "cnameAutoCreatedHint": "Record was created with A: {{ips}}. No further apply needed for this host.",
+    "noResolver": "Select an external resolver first."
   },
   "rewriteRules": {
     "title": "Rewrite Rules",
@@ -420,5 +418,48 @@
     "deleteConfirm": "Delete {{count}} selected item(s)? This cannot be undone.",
     "selectAll": "Select all on this page",
     "selectRow": "Select row"
+  },
+  "externalResolvers": {
+    "title": "External Resolvers",
+    "subtitle": "Pre-defined DNS lookup providers (API keys, quota, modes).",
+    "name": "Name",
+    "nameRequired": "Name is required",
+    "namePlaceholder": "e.g. MXToolbox primary",
+    "provider": "Provider",
+    "providerImmutable": "Provider cannot be changed after create.",
+    "mode": "Mode",
+    "modeHelp": "manual_only is for frontend lookups only. Other modes are reserved for future DNS automation.",
+    "createTitle": "Add external resolver",
+    "editTitle": "Edit external resolver",
+    "deleteConfirm": "Delete resolver \"{{name}}\" and all its API keys?",
+    "keysTitle": "API keys",
+    "addKey": "Add key",
+    "addKeyTitle": "Add API key",
+    "editKeyTitle": "Edit API key",
+    "apiKey": "API key",
+    "apiKeyRequired": "API key is required",
+    "keyLabel": "Label",
+    "keyLabelOptional": "Optional label",
+    "priority": "Priority",
+    "priorityHelp": "Lower number is tried first in the queue.",
+    "periodLimit": "Period limit",
+    "periodLimitHelp": "Hard query limit per period (0 = unlimited local tracking).",
+    "periodMs": "Period (ms)",
+    "periodMsHelp": "Quota window length in milliseconds (default 1 day).",
+    "usage": "Remaining / limit",
+    "lastUsed": "Last used",
+    "noKeys": "No API keys yet. Add one to enable lookups.",
+    "deleteKeyConfirm": "Delete this API key?",
+    "resetUsage": "Reset usage",
+    "syncUsage": "Sync usage",
+    "providers": {
+      "mxtoolbox": "MXToolbox"
+    },
+    "modes": {
+      "manual_only": "Manual only",
+      "filtered_only": "Filtered only",
+      "timeout": "Timeout",
+      "all": "All"
+    }
   }
 }
